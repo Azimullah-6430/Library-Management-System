@@ -4,7 +4,6 @@
   "description": "REST API for Crescent Library Management System — Node.js, Express, MongoDB, Passport.js, JWT, Multer",
   "main": "src/server.js",
   "scripts": {
-    "prestart": "kill-port 5000",
     "start": "node src/server.js",
     "predev": "kill-port 5000",
     "dev": "nodemon src/server.js",
