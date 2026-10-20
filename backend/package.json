@@ -1,0 +1,47 @@
+{
+  "name": "crescent-library-backend",
+  "version": "1.0.0",
+  "description": "REST API for Crescent Library Management System — Node.js, Express, MongoDB, Passport.js, JWT, Multer",
+  "main": "src/server.js",
+  "scripts": {
+    "prestart": "kill-port 5000",
+    "start": "node src/server.js",
+    "predev": "kill-port 5000",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "@zxing/library": "^0.23.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "helmet": "^7.1.0",
+    "javascript-barcode-reader": "^1.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "sharp": "^0.35.5",
+    "tesseract.js": "^7.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "kill-port": "^2.0.1",
+    "nodemon": "^3.1.0"
+  },
+  "keywords": [
+    "library-management",
+    "express",
+    "mongodb",
+    "mongoose",
+    "jwt",
+    "passport",
+    "multer"
+  ],
+  "author": "Crescent Institute",
+  "license": "ISC"
+}

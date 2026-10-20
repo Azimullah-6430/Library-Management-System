@@ -1,0 +1,3303 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600&display=swap"
+    />
+    <title>Crescent Library Management System</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+      :root {
+        --navy: #102744;
+        --mid: #183a5b;
+        --bg: #f7f8fa;
+        --sf: #fff;
+        --gold: #c8a96b;
+        --tx: #172334;
+        --mu: #5b6b7e;
+        --bd: #e1e5ec;
+        --ok: #1b7a4b;
+        --wn: #a15c00;
+        --er: #b3261e;
+        --sh: 0 1px 3px rgba(16, 39, 68, 0.08);
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0c1624;
+          --sf: #14233a;
+          --tx: #e8edf4;
+          --mu: #9aabbf;
+          --bd: #26384f;
+          --navy: #0a1a30;
+          --ok: #4cc38a;
+          --wn: #e8a94a;
+          --er: #ff8a80;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #0c1624;
+        --sf: #14233a;
+        --tx: #e8edf4;
+        --mu: #9aabbf;
+        --bd: #26384f;
+        --navy: #0a1a30;
+        --ok: #4cc38a;
+        --wn: #e8a94a;
+        --er: #ff8a80;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--tx);
+        font:
+          14px/1.5 Inter,
+          Manrope,
+          system-ui,
+          sans-serif;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        color: var(--tx);
+      }
+      h1 {
+        font-size: 22px;
+      }
+      h2 {
+        font-size: 16px;
+      }
+      .wm {
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .wm i {
+        width: 30px;
+        height: 30px;
+        border: 1.5px dashed var(--gold);
+        border-radius: 6px;
+        display: inline-block;
+      }
+      .wm small {
+        display: block;
+        font-weight: 500;
+        font-size: 10px;
+        color: var(--mu);
+        letter-spacing: 0.08em;
+      }
+      .btn {
+        display: inline-block;
+        border: 1px solid var(--bd);
+        background: var(--sf);
+        color: var(--tx);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font: 600 13px inherit;
+        cursor: pointer;
+      }
+      .btn.p {
+        background: var(--navy);
+        color: #fff;
+        border-color: var(--navy);
+      }
+      .btn.g {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: #102744;
+      }
+      .btn.d {
+        color: var(--er);
+      }
+      .btn:hover {
+        filter: brightness(0.96);
+      }
+      .card {
+        background: var(--sf);
+        border: 1px solid var(--bd);
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: var(--sh);
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 9px 10px;
+        border: 1px solid var(--bd);
+        border-radius: 8px;
+        background: var(--sf);
+        color: var(--tx);
+        font: inherit;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus,
+      .btn:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 1px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 12px;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .err {
+        color: var(--er);
+        font-size: 12px;
+        min-height: 16px;
+      }
+      .fld {
+        margin-bottom: 8px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 5%;
+        background: var(--sf);
+        border-bottom: 1px solid var(--bd);
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .top nav {
+        display: flex;
+        gap: 18px;
+        color: var(--mu);
+        font-weight: 500;
+        flex-wrap: wrap;
+      }
+      .hero {
+        background: var(--navy);
+        color: #fff;
+        padding: 64px 5%;
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 40px;
+        align-items: center;
+      }
+      .hero h1 {
+        color: #fff;
+        font-size: 38px;
+        line-height: 1.15;
+        max-width: 560px;
+      }
+      .hero p {
+        color: #c5d0de;
+        max-width: 520px;
+      }
+
+      .sec {
+        padding: 48px 5%;
+        max-width: 1200px;
+        margin: auto;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+      .step b {
+        color: var(--gold);
+        font-size: 22px;
+      }
+      footer {
+        background: var(--navy);
+        color: #c5d0de;
+        padding: 28px 5%;
+        font-size: 12px;
+      }
+      .auth {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 100vh;
+      }
+      .auth aside {
+        background: var(--navy);
+        color: #fff;
+        padding: 48px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      .auth main {
+        padding: 48px 6%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-width: 520px;
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        min-height: 100vh;
+      }
+      .side {
+        background: var(--navy);
+        color: #cbd6e4;
+        padding: 16px 10px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+      }
+      .side .wm {
+        color: #fff;
+        padding: 6px 8px 18px;
+      }
+      .side a {
+        display: block;
+        padding: 9px 12px;
+        border-radius: 8px;
+      }
+      .side a.on,
+      .side a:hover {
+        background: var(--mid);
+        color: #fff;
+      }
+      .side a.on {
+        box-shadow: inset 3px 0 var(--gold);
+      }
+      .main {
+        min-width: 0;
+      }
+      .bar {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 12px 24px;
+        background: var(--sf);
+        border-bottom: 1px solid var(--bd);
+        flex-wrap: wrap;
+      }
+      .bar input {
+        max-width: 340px;
+      }
+      .pg {
+        padding: 24px;
+        max-width: 1240px;
+      }
+      .ph {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .ph small {
+        color: var(--mu);
+      }
+      .kpi {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+      .kpi b {
+        display: block;
+        font-size: 26px;
+        margin-top: 4px;
+      }
+      .kpi span {
+        color: var(--mu);
+        font-size: 12px;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+      .tw {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+      th {
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--mu);
+        padding: 9px 8px;
+        border-bottom: 1px solid var(--bd);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      td {
+        padding: 9px 8px;
+        border-bottom: 1px solid var(--bd);
+        vertical-align: middle;
+      }
+      tr:hover td {
+        background: rgba(200, 169, 107, 0.08);
+      }
+      .th {
+        width: 34px;
+        height: 46px;
+        border-radius: 4px;
+        background: var(--mid);
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        overflow: hidden;
+      }
+      .th img,
+      .cv img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .bdg {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        border-radius: 99px;
+        font-size: 11.5px;
+        font-weight: 600;
+        line-height: 1.2;
+        border: 1px solid transparent;
+      }
+      .bdg::before {
+        content: "";
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .Available {
+        background: rgba(27, 122, 75, 0.12);
+        color: var(--ok);
+        border-color: rgba(27, 122, 75, 0.25);
+      }
+      .Issued {
+        background: rgba(161, 92, 0, 0.12);
+        color: var(--wn);
+        border-color: rgba(161, 92, 0, 0.25);
+      }
+      .Reserved {
+        background: rgba(81, 45, 168, 0.12);
+        color: #7c4dff;
+        border-color: rgba(81, 45, 168, 0.25);
+      }
+      .Lost,
+      .Damaged,
+      .Withdrawn {
+        background: rgba(179, 38, 30, 0.12);
+        color: var(--er);
+        border-color: rgba(179, 38, 30, 0.25);
+      }
+      .bar2 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 6px 0;
+        font-size: 12px;
+      }
+      .bar2 span:first-child {
+        width: 130px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .bar2 i {
+        display: block;
+        height: 10px;
+        background: var(--gold);
+        border-radius: 3px;
+        min-width: 3px;
+      }
+      .bar2 div {
+        flex: 1;
+      }
+      .fg {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 4px 14px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .row > * {
+        flex: 0 0 auto;
+      }
+      .dz {
+        border: 2px dashed var(--bd);
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+        color: var(--mu);
+        background: var(--bg);
+      }
+      .dz.o {
+        border-color: var(--gold);
+      }
+      .cv {
+        width: 100%;
+        max-width: 200px;
+        aspect-ratio: 3/4;
+        margin: 8px auto;
+        background: var(--bg);
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mu);
+      }
+      .note {
+        background: rgba(200, 169, 107, 0.15);
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 6px;
+        margin: 0;
+      }
+      dt {
+        color: var(--mu);
+      }
+      dd {
+        margin: 0;
+      }
+      .acc {
+        background: var(--navy);
+        color: var(--gold);
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+      }
+      #toast {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 9;
+      }
+      #toast div {
+        background: var(--navy);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border-left: 4px solid var(--gold);
+        box-shadow: var(--sh);
+      }
+      #toast .e {
+        border-color: var(--er);
+      }
+      @media (max-width: 860px) {
+        .hero,
+        .auth {
+          grid-template-columns: 1fr;
+        }
+        .auth aside {
+          display: none;
+        }
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .side {
+          position: static;
+          height: auto;
+          display: flex;
+          overflow-x: auto;
+          gap: 4px;
+        }
+        .side .wm {
+          display: none;
+        }
+        .side a {
+          white-space: nowrap;
+        }
+        .hero h1 {
+          font-size: 28px;
+        }
+        .pg {
+          padding: 14px;
+        }
+      }
+      @media print {
+        .side,
+        .bar,
+        .ph .row,
+        .no-print {
+          display: none !important;
+        }
+        .app {
+          display: block;
+        }
+      }
+      .two {
+        grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+      }
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .side a,
+      .side button {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        background: none;
+        border: 0;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+      .side .bt {
+        margin-top: auto;
+        border-top: 1px solid #ffffff22;
+        padding-top: 8px;
+      }
+      .ic {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .app.c {
+        grid-template-columns: 64px 1fr;
+      }
+      .app.c .lb,
+      .app.c .side .wm div {
+        display: none;
+      }
+      .pw-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .pw-box input {
+        padding-right: 44px;
+      }
+      .pw-toggle {
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 6px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mu);
+        border-radius: 6px;
+        transition:
+          color 0.15s ease,
+          background 0.15s ease;
+      }
+      .pw-toggle:hover {
+        color: var(--tx);
+        background: var(--bg);
+      }
+      .pw-toggle:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 1px;
+      }
+      .ctr {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .ctr .card {
+        width: 100%;
+        max-width: 440px;
+        padding: 32px;
+        box-shadow:
+          0 4px 20px -2px rgba(16, 39, 68, 0.08),
+          0 2px 6px rgba(16, 39, 68, 0.04);
+        border: 1px solid var(--bd);
+        border-radius: 14px;
+      }
+      dialog {
+        border: 1px solid var(--bd);
+        border-radius: 12px;
+        background: var(--sf);
+        color: var(--tx);
+        padding: 20px;
+        width: min(420px, 92vw);
+      }
+      dialog::backdrop {
+        background: rgba(10, 26, 48, 0.5);
+      }
+      .tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--bd);
+        margin-bottom: 14px;
+      }
+      .tabs button {
+        background: none;
+        border: 0;
+        padding: 8px 14px;
+        font: 600 13px inherit;
+        color: var(--mu);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+      }
+      .tabs button.on {
+        color: var(--tx);
+        border-color: var(--gold);
+      }
+      details.ad {
+        margin: 6px 0 10px;
+      }
+      details.ad summary {
+        cursor: pointer;
+        font-weight: 600;
+        padding: 6px 0;
+      }
+      .am {
+        position: relative;
+        margin-left: auto;
+      }
+      .am summary {
+        list-style: none;
+        cursor: pointer;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--navy);
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+      .am div {
+        position: absolute;
+        right: 0;
+        top: 40px;
+        background: var(--sf);
+        border: 1px solid var(--bd);
+        border-radius: 8px;
+        padding: 6px;
+        min-width: 150px;
+        z-index: 5;
+        box-shadow: var(--sh);
+      }
+      .am a {
+        display: block;
+        padding: 7px 10px;
+        border-radius: 6px;
+      }
+      .am a:hover {
+        background: var(--bg);
+      }
+      .spines {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        height: 240px;
+      }
+      .spines i {
+        display: block;
+        width: 44px;
+        border-radius: 4px 4px 0 0;
+        box-shadow: inset -6px 0 0 rgba(0, 0, 0, 0.15);
+      }
+      .hero {
+        padding: 56px 5%;
+      }
+      .hero h1 {
+        font-size: 34px;
+      }
+      @media (max-width: 860px) {
+        .side {
+          flex-direction: row;
+        }
+        .side .bt {
+          margin-top: 0;
+          border: 0;
+          padding: 0;
+          display: flex;
+        }
+        .app.c {
+          grid-template-columns: 1fr;
+        }
+        .tg {
+          display: none !important;
+        }
+        .spines i {
+          width: 30px;
+        }
+      }
+      body {
+        font-size: 16px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+      h2 {
+        font-size: 18px;
+      }
+      .btn {
+        font:
+          600 15px/1.2 Inter,
+          Manrope,
+          system-ui,
+          sans-serif;
+        padding: 10px 16px;
+      }
+      .gb {
+        font:
+          600 15px/1.2 Inter,
+          system-ui,
+          sans-serif;
+        padding: 11px;
+      }
+      .tabs button {
+        font:
+          600 15px/1.2 Inter,
+          system-ui,
+          sans-serif;
+      }
+      label {
+        font-size: 14px;
+      }
+      input,
+      select,
+      textarea {
+        font-size: 15.5px;
+        padding: 10px 12px;
+      }
+      td {
+        font-size: 15px;
+      }
+      th {
+        font-size: 12.5px;
+      }
+      .kpi b {
+        font-size: 30px;
+      }
+      .kpi span,
+      .ph small,
+      small,
+      .bar2 {
+        font-size: 14px;
+      }
+      .err {
+        font-size: 13.5px;
+      }
+      .side {
+        font-size: 15.5px;
+      }
+      .side a,
+      .side button {
+        padding: 11px 12px;
+      }
+      .app {
+        grid-template-columns: 250px 1fr;
+      }
+      .app.c {
+        grid-template-columns: 68px 1fr;
+      }
+      .pg {
+        max-width: 1320px;
+      }
+      .bdg {
+        font-size: 12.5px;
+      }
+      .note {
+        font-size: 14px;
+      }
+      dl {
+        grid-template-columns: 170px 1fr;
+      }
+      dt {
+        font-size: 14px;
+      }
+      .ctr .card {
+        max-width: 440px;
+      }
+      .ctr h1 {
+        font-size: 24px;
+      }
+      @media (max-width: 860px) {
+        .app,
+        .app.c {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        border-radius: 8px;
+        box-shadow: none;
+      }
+      .btn,
+      input,
+      select,
+      textarea {
+        border-radius: 6px;
+      }
+      h1,
+      .hd {
+        font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+        font-weight: 600;
+      }
+      th {
+        background: var(--bg);
+      }
+      .kpi .card {
+        border-top: 3px solid var(--gold);
+      }
+      .btn.gh {
+        background: transparent;
+        color: #fff;
+        border-color: #ffffff66;
+      }
+      .hh {
+        background: var(--navy);
+        color: #c9d4e2;
+        border-radius: 8px;
+        padding: 36px;
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 36px;
+        align-items: center;
+        border-bottom: 3px solid var(--gold);
+      }
+      .hh p {
+        margin: 0 0 22px;
+        max-width: 520px;
+        line-height: 1.6;
+      }
+      .ey {
+        font-size: 12.5px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-weight: 600;
+      }
+      .hh .hd {
+        font-size: 36px;
+        line-height: 1.2;
+        color: #fff;
+        margin: 8px 0 12px;
+      }
+      .gl {
+        margin: 0;
+        display: grid;
+        border-left: 1px solid #ffffff26;
+        padding-left: 32px;
+        gap: 16px;
+      }
+      .gl dt {
+        color: #9fb0c6;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .gl dd {
+        font:
+          600 32px/1.2 "Source Serif 4",
+          Georgia,
+          serif;
+        color: #fff;
+        margin: 2px 0 0;
+      }
+      .gl div {
+        display: block;
+      }
+      .sh {
+        font-size: 13px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--mu);
+        margin: 28px 0 12px;
+        font-weight: 700;
+      }
+      .qa {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+      }
+      .qi {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding: 16px;
+        background: var(--sf);
+        border: 1px solid var(--bd);
+        border-radius: 8px;
+      }
+      .qi:hover {
+        border-color: var(--gold);
+      }
+      .qi b {
+        display: block;
+      }
+      .qi span {
+        color: var(--mu);
+        font-size: 14px;
+      }
+      .qi .ic {
+        width: 24px;
+        height: 24px;
+        color: var(--gold);
+      }
+      .rl {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--bd);
+      }
+      .rl div {
+        flex: 1;
+        min-width: 0;
+      }
+      .rl b,
+      .rl span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .rl span {
+        color: var(--mu);
+        font-size: 14px;
+      }
+      .rl em {
+        font-style: normal;
+        color: var(--mu);
+        font-size: 13px;
+      }
+      .st {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: s;
+      }
+      .st li {
+        counter-increment: s;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 0 12px 44px;
+        position: relative;
+        border-bottom: 1px solid var(--bd);
+      }
+      .st li:before {
+        content: counter(s);
+        position: absolute;
+        left: 0;
+        top: 11px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1.5px solid var(--gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+      .st span {
+        color: var(--mu);
+        font-size: 14px;
+      }
+      .app.c .side .wm {
+        padding: 6px 0 18px;
+        justify-content: center;
+      }
+      .app.c .side {
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+      @media (max-width: 860px) {
+        .hh {
+          grid-template-columns: 1fr;
+          padding: 24px;
+        }
+        .gl {
+          border-left: 0;
+          padding: 16px 0 0;
+          border-top: 1px solid #ffffff26;
+        }
+        .hh .hd {
+          font-size: 28px;
+        }
+      }
+      .spinner {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s ease-in-out infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="toast" aria-live="polite"></div>
+    <script>
+      const LOGO = "./assets/logo.png";
+      const API_BASE = window.CLMS_API || "http://localhost:5000/api/v1";
+
+      const fmt = (n) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          maximumFractionDigits: 0,
+        }).format(n || 0);
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      const today = () => new Date().toISOString().slice(0, 10);
+      const $ = (s) => document.querySelector(s);
+      const go = (h) => (location.hash = h);
+
+      // ── Real REST API Client (Node.js + Express + MongoDB backend) ─────────────
+      async function api(path, opts = {}) {
+        const token = localStorage.getItem("clms_token");
+        const headers = { ...(opts.headers || {}) };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        if (
+          !(opts.body instanceof FormData) &&
+          opts.body &&
+          typeof opts.body === "object"
+        ) {
+          headers["Content-Type"] = "application/json";
+          opts.body = JSON.stringify(opts.body);
+        }
+
+        const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+        try {
+          const res = await fetch(url, { ...opts, headers });
+          if (res.status === 401) {
+            localStorage.removeItem("clms_token");
+            localStorage.removeItem("clms_user");
+            auth = false;
+            currentUser = null;
+            if (
+              !location.hash.includes("login") &&
+              !location.hash.includes("register")
+            ) {
+              toast("Session expired or unauthorized. Please sign in.", 1);
+              go("#/login");
+            }
+            throw new Error("Unauthorized");
+          }
+          const ct = res.headers.get("content-type") || "";
+          if (ct.includes("application/json")) {
+            const data = await res.json();
+            if (!res.ok)
+              throw new Error(
+                data.message || data.detail || "API request failed",
+              );
+            return data;
+          }
+          if (!res.ok) throw new Error(res.statusText || "API request failed");
+          return res;
+        } catch (err) {
+          if (err.message !== "Unauthorized") {
+            console.warn("API Error on", path, err.message);
+          }
+          throw err;
+        }
+      }
+
+      // ── Application State (Populated strictly from live Backend API) ─────────────
+      let auth = false;
+      let currentUser = null;
+      let S = {
+        books: [],
+        cats: [],
+        total: 0,
+        pages: 1,
+        summary: {},
+        fullReport: {},
+      };
+      let F = {
+        q: "",
+        cat: "",
+        st: "",
+        sort: "createdAt",
+        dir: -1,
+        pg: 1,
+        ps: 8,
+      };
+      let D = { front: "", back: "", frontFile: null, backFile: null };
+      let col = 0,
+        dirty = 0,
+        cur = "",
+        skip = 0;
+
+      function toast(m, e) {
+        const t = document.createElement("div");
+        t.textContent = m;
+        if (e) t.className = "e";
+        $("#toast").append(t);
+        setTimeout(() => t.remove(), 4000);
+      }
+
+      function getCoverUrl(path) {
+        if (!path) return "";
+        if (
+          path.startsWith("http://") ||
+          path.startsWith("https://") ||
+          path.startsWith("data:")
+        )
+          return path;
+        const base = API_BASE.replace("/api/v1", "");
+        return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
+      }
+
+      const logo = () =>
+        `<div class="wm"><img src="${LOGO}" width="40" height="40" alt="" style="flex:none;border-radius:50%"><div>Crescent Library<small>B.S. Abdur Rahman Crescent Institute</small></div></div>`;
+      const IC = {
+        home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+        dash: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+        books:
+          '<path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>',
+        plus: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>',
+        tag: '<path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r=".5"/>',
+        chart:
+          '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+        swap: '<path d="m16 3 4 4-4 4M20 7H4M8 21l-4-4 4-4M4 17h16"/>',
+        user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+        set: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+        out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+        menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+      };
+      const ic = (n) =>
+        `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC[n] || ""}</svg>`;
+
+      const NAV = [
+        ["#/", "Home", "home"],
+        ["#/dashboard", "Dashboard", "dash"],
+        ["#/books", "All Books", "books"],
+        ["#/books/add", "Add Book", "plus"],
+        ["#/categories", "Categories", "tag"],
+        ["#/reports", "Reports", "chart"],
+        ["#/import-export", "Import / Export", "swap"],
+      ];
+
+      const shell = (t, sub, body, act = "") => {
+        const h = location.hash;
+        const lk = (n, x = "") =>
+          `<a href="${n[0]}" title="${n[1]}" class="${(h || "#/") === n[0] || (n[0] === "#/books" && /^#\/books\/(?!add)/.test(h)) ? "on" : ""}" ${x}>${ic(n[2])}<span class="lb">${n[1]}</span></a>`;
+        const initials =
+          currentUser && currentUser.name
+            ? currentUser.name
+                .split(" ")
+                .map((x) => x[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()
+            : "CL";
+
+        return `<div class="app${col ? " c" : ""}"><nav class="side" aria-label="Main"><div class="wm" style="padding:6px 8px 18px"><img src="${LOGO}" width="44" height="44" alt="Crescent Library logo" style="flex:none;background:#fff;border-radius:50%;padding:3px"><div>Crescent Library<small>Chennai</small></div></div>${NAV.map((n) => lk(n)).join("")}<div class="bt">${lk(["#/profile", "Profile", "user"])}${lk(["#/settings", "Settings", "set"])}${lk(["#/login", "Logout", "out"], 'onclick="doLogout();return false;"')}</div></nav><div class="main"><div class="bar"><button class="btn tg" aria-label="Toggle sidebar" onclick="col=!col;document.querySelector('.app').classList.toggle('c')">${ic("menu")}</button><small style="color:var(--mu)">Home / ${esc(t)}</small>${h === "#/books" ? "" : `<input id="gs" placeholder="Search books…" aria-label="Search books" value="${esc(F.q)}" onkeydown="if(event.key==='Enter'){F.q=this.value;F.pg=1;go('#/books')}">`}<span class="bdg Available" title="Connected to MongoDB via Express API">MongoDB Atlas</span><details class="am"><summary aria-label="Profile menu">${initials}</summary><div><div style="padding:6px 10px;font-size:12px;color:var(--mu);border-bottom:1px solid var(--bd)">${esc(currentUser ? currentUser.name : "Librarian")}</div><a href="#/profile">Profile</a><a href="#/settings">Settings</a><a href="#/help">Help</a><a href="#/login" onclick="doLogout();return false;">Logout</a></div></details></div><div class="pg">${t === "Home" ? "" : `<div class="ph"><div><h1>${esc(t)}</h1><small>${sub}</small></div><div class="row">${act}</div></div>`}${body}</div></div></div>`;
+      };
+
+      const bars = (entries, f = (x) => x) => {
+        if (!entries || !entries.length)
+          return '<p style="color:var(--mu)">No distribution data yet.</p>';
+        const mx = Math.max(1, ...entries.map((x) => x.count || x[1] || 0));
+        return entries
+          .map((item) => {
+            const k =
+              item.category ||
+              item.status ||
+              item.year ||
+              item.shelf ||
+              item[0] ||
+              "Unknown";
+            const v =
+              item.count !== undefined
+                ? item.count
+                : item.copies || item[1] || 0;
+            return `<div class="bar2"><span>${esc(k)}</span><div><i style="width:${(v / mx) * 100}%"></i></div><b>${f(v)}</b></div>`;
+          })
+          .join("");
+      };
+
+      const th = (b) => {
+        const imgUrl = getCoverUrl(b.frontCover || b.front);
+        return `<div class="th">${imgUrl ? `<img src="${imgUrl}" alt="">` : esc((b.title || "B")[0])}</div>`;
+      };
+
+      // ── Auth Pages & Symbols ───────────────────────────────────────────────────
+      const EYE_OPEN = `<svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+      const EYE_OFF = `<svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
+
+      function togglePasswordVisibility(btn) {
+        const input = btn.previousElementSibling;
+        if (!input) return;
+        const isPw = input.type === "password";
+        input.type = isPw ? "text" : "password";
+        btn.innerHTML = isPw ? EYE_OFF : EYE_OPEN;
+        btn.setAttribute(
+          "aria-label",
+          isPw ? "Hide password" : "Show password",
+        );
+        btn.title = isPw ? "Hide password" : "Show password";
+      }
+
+      function authPage(reg) {
+        const fl = (id, l, t = "text", x = "") =>
+          `<div class="fld"><label for="${id}">${l}</label>${x || `<input id="${id}" type="${t}">`}<div class="err" id="e_${id}"></div></div>`;
+        const pwf = (id, l) =>
+          fl(
+            id,
+            l,
+            "",
+            `<div class="pw-box"><input id="${id}" type="password" autocomplete="current-password"><button type="button" class="pw-toggle" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button></div>`,
+          );
+
+        return `<div class="ctr"><div class="card"><div style="text-align:center"><img src="${LOGO}" width="76" height="76" alt="Crescent logo" style="border-radius:50%"><div style="font-weight:700;margin-top:10px;line-height:1.35">B.S. Abdur Rahman Crescent Institute of Science and Technology</div><div style="color:var(--mu);font-size:14px">Central Library Management System</div></div><h1 style="text-align:center">${reg ? "Create Librarian Account" : "Librarian Sign In"}</h1><form id="af" novalidate>${reg ? fl("name", "Full Name *") : ""}${fl("email", "Institutional Email *", "email")}${reg ? fl("staffId", "Staff / Faculty ID") : ""}${pwf("pw", "Password *")}${reg ? `<small style="color:var(--mu);display:block;margin:-4px 0 8px">Minimum 8 characters.</small>${pwf("pw2", "Confirm Password *")}` : ""}<button class="btn p" style="width:100%;margin-top:14px" id="sb">${reg ? "Register Account" : "Sign In"}</button></form><div style="text-align:center;margin-top:18px;font-size:13px"><a href="${reg ? "#/login" : "#/register"}" style="color:var(--navy);font-weight:600">${reg ? "Already registered? Sign In" : "New librarian? Register account"}</a></div></div></div>`;
+      }
+
+      function bindAuth(reg) {
+        $("#af").onsubmit = async (e) => {
+          e.preventDefault();
+          const v = (id) => ($("#" + id)?.value || "").trim();
+          const er = {};
+
+          if (!v("email")) er.email = "Enter your email address.";
+          if (!v("pw")) er.pw = "Enter your password.";
+          if (reg) {
+            if (!v("name")) er.name = "Full name is required.";
+            if (v("pw").length < 8)
+              er.pw = "Password must be at least 8 characters.";
+            if (v("pw") !== v("pw2")) er.pw2 = "Passwords do not match.";
+          }
+
+          document
+            .querySelectorAll(".err")
+            .forEach((x) => (x.textContent = ""));
+          Object.entries(er).forEach(([k, m]) => {
+            if ($("#e_" + k)) $("#e_" + k).textContent = m;
+          });
+          if (Object.keys(er).length) return;
+
+          const sb = $("#sb");
+          sb.disabled = true;
+          sb.innerHTML = `<span class="spinner"></span>Please wait…`;
+
+          try {
+            let res;
+            if (reg) {
+              res = await api("/auth/register", {
+                method: "POST",
+                body: {
+                  name: v("name"),
+                  email: v("email"),
+                  password: v("pw"),
+                  staffId: v("staffId") || undefined,
+                  department: "Central Library",
+                },
+              });
+            } else {
+              res = await api("/auth/login", {
+                method: "POST",
+                body: {
+                  email: v("email"),
+                  password: v("pw"),
+                },
+              });
+            }
+
+            const token = res.token || res.access_token;
+            if (!token) throw new Error("Authentication token not received");
+            localStorage.setItem("clms_token", token);
+            currentUser = res.user;
+            localStorage.setItem("clms_user", JSON.stringify(res.user));
+            auth = true;
+
+            toast(
+              reg
+                ? "Account created successfully! Welcome to CLMS."
+                : "Signed in successfully.",
+            );
+            go("#/");
+          } catch (err) {
+            sb.disabled = false;
+            sb.textContent = reg ? "Register Account" : "Sign In";
+            toast(
+              err.message ||
+                "Authentication failed. Please check credentials or verify server is running.",
+              1,
+            );
+          }
+        };
+      }
+
+      function doLogout() {
+        localStorage.removeItem("clms_token");
+        localStorage.removeItem("clms_user");
+        auth = false;
+        currentUser = null;
+        toast("Signed out successfully.");
+        go("#/login");
+      }
+
+      // ── App Route Handlers ──────────────────────────────────────────────────────
+      const R = {};
+
+      R[""] = async () => {
+        const hr = new Date().getHours();
+        const gr =
+          hr < 12
+            ? "Good morning"
+            : hr < 17
+              ? "Good afternoon"
+              : "Good evening";
+        const name = currentUser ? currentUser.name : "Librarian";
+
+        let summary = { totalBooks: 0, totalCopies: 0, totalCategories: 0 };
+        let recent = [];
+        try {
+          const [sData, bData] = await Promise.all([
+            api("/reports/summary"),
+            api("/books?limit=4&sort=createdAt&dir=-1"),
+          ]);
+          summary = sData.data || sData;
+          recent = bData.items || bData.data || [];
+        } catch (e) {
+          console.error("Home load error:", e);
+        }
+
+        const QA = [
+          [
+            "Browse Catalog",
+            "Search and manage book inventory",
+            "#/books",
+            "books",
+          ],
+          [
+            "Register a Book",
+            "Add cover images and physical metadata",
+            "#/books/add",
+            "plus",
+          ],
+          [
+            "Reports & Analytics",
+            "Totals and stock distributions",
+            "#/reports",
+            "chart",
+          ],
+          [
+            "Import / Export",
+            "Bulk import & export via CSV",
+            "#/import-export",
+            "swap",
+          ],
+        ];
+
+        return shell(
+          "Home",
+          "",
+          `
+    <section class="hh">
+      <div>
+        <div class="ey">B.S. Abdur Rahman Crescent Institute of Science and Technology</div>
+        <h2 class="hd">${gr}, ${esc(name)}.</h2>
+        <p>The Central Library inventory, catalog and live reports are ready.</p>
+        <div class="row">
+          <a class="btn g" href="#/dashboard">Open Dashboard</a>
+          <a class="btn gh" href="#/books/add">Register a Book</a>
+        </div>
+      </div>
+      <dl class="gl">
+        <div><dt>Catalog Titles</dt><dd>${summary.totalBooks ?? summary.total_books ?? 0}</dd></div>
+        <div><dt>Physical Copies</dt><dd>${summary.totalCopies ?? summary.total_copies ?? 0}</dd></div>
+        <div><dt>Categories</dt><dd>${summary.totalCategories ?? summary.total_categories ?? 0}</dd></div>
+      </dl>
+    </section>
+    <h3 class="sh">Quick Access</h3>
+    <div class="qa">${QA.map((q) => `<a href="${q[2]}" class="qi">${ic(q[3])}<div><b>${q[0]}</b><span>${q[1]}</span></div></a>`).join("")}</div>
+    <div class="two" style="margin-top:8px">
+      <div class="card">
+        <h3 class="sh" style="margin-top:0">Recently Added</h3>
+        ${
+          recent.length
+            ? recent
+                .map(
+                  (b) => `
+          <a class="rl" href="#/books/${b.id || b._id}">
+            ${th(b)}
+            <div><b>${esc(b.title)}</b><span>${esc(b.author || "—")} · ${esc(b.acc || b.acc_no || "")}</span></div>
+            <em>${(b.createdAt || b.date || "").slice(0, 10)}</em>
+          </a>
+        `,
+                )
+                .join("")
+            : '<p style="color:var(--mu);padding:10px 0">No books cataloged yet. Click "Register a Book" to start.</p>'
+        }
+        <a class="btn" style="margin-top:14px" href="#/books">View All Books</a>
+      </div>
+      <div class="card">
+        <h3 class="sh" style="margin-top:0">Cataloging Workflow</h3>
+        <ol class="st">
+          <li><b>Upload Cover Images</b><span>Front and back covers are stored securely on the server via Multer.</span></li>
+          <li><b>Enter Bibliographic Data</b><span>Title, accession serial number, classification, and shelf coordinates.</span></li>
+          <li><b>Save to Permanent Storage</b><span>Updates inventory and reports in MongoDB in real time.</span></li>
+        </ol>
+      </div>
+    </div>
+  `,
+        );
+      };
+
+      R.login = () => authPage(0);
+      R.register = () => authPage(1);
+
+      R.dashboard = async () => {
+        let summary = {
+          totalBooks: 0,
+          totalCopies: 0,
+          totalCategories: 0,
+          totalValue: 0,
+        };
+        let byCategory = [];
+        let recent = [];
+
+        try {
+          const [fullRep, booksRes] = await Promise.all([
+            api("/reports/full"),
+            api("/books?limit=5&sort=createdAt&dir=-1"),
+          ]);
+          const repData = fullRep.data || fullRep;
+          summary = repData.summary || {};
+          byCategory = repData.byCategory || repData.by_category || [];
+          recent = booksRes.items || booksRes.data || [];
+        } catch (e) {
+          console.error("Dashboard load error:", e);
+        }
+
+        const kpis = [
+          ["Total Books", summary.totalBooks ?? summary.total_books ?? 0],
+          ["Total Copies", summary.totalCopies ?? summary.total_copies ?? 0],
+          [
+            "Categories",
+            summary.totalCategories ?? summary.total_categories ?? 0,
+          ],
+          [
+            "Inventory Value (est.)",
+            fmt(summary.totalValue ?? summary.total_inventory_value ?? 0),
+          ],
+        ];
+
+        return shell(
+          "Dashboard",
+          "Live inventory overview from MongoDB.",
+          `
+    <div class="kpi">${kpis.map((k) => `<div class="card"><span>${k[0]}</span><b>${k[1]}</b></div>`).join("")}</div>
+    <div class="two">
+      <div class="card">
+        <h2 style="margin-bottom:8px">Recently Added</h2>
+        <div class="tw">
+          <table style="min-width:400px">
+            <tbody>
+              ${
+                recent.length
+                  ? recent
+                      .map(
+                        (b) => `
+                <tr>
+                  <td>${th(b)}</td>
+                  <td><a href="#/books/${b.id || b._id}"><b>${esc(b.title)}</b></a><br><small>${esc(b.acc || b.acc_no || "")}</small></td>
+                  <td>${(b.createdAt || b.date || "").slice(0, 10)}</td>
+                </tr>
+              `,
+                      )
+                      .join("")
+                  : '<tr><td colspan="3" style="color:var(--mu);padding:14px">No books in catalog.</td></tr>'
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="margin-bottom:8px">Books by Category</h2>
+        ${bars(byCategory)}
+      </div>
+    </div>
+  `,
+          `<a class="btn p" href="#/books/add">Add New Book</a><a class="btn" href="#/books">View All Books</a>`,
+        );
+      };
+
+      R.books = async () => {
+        // Load categories for filter dropdown
+        let cats = [];
+        try {
+          cats = await api("/categories");
+          S.cats = Array.isArray(cats) ? cats : cats.data || [];
+        } catch (e) {}
+
+        return shell(
+          "All Books",
+          "Permanent MongoDB inventory",
+          `
+    <div id="books_flash"></div>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <input style="width:260px" id="q" placeholder="Search title, author, acc…" aria-label="Search inventory" value="${esc(F.q)}" oninput="F.q=this.value;F.pg=1;tbl()">
+        <select style="width:auto" aria-label="Category" onchange="F.cat=this.value;F.pg=1;tbl()">
+          <option value="">All Categories</option>
+          ${S.cats.map((c) => `<option ${F.cat === c.name ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+        </select>
+        <select style="width:auto" aria-label="Availability" onchange="F.st=this.value;F.pg=1;tbl()">
+          <option value="">Any Status</option>
+          ${STAT.map((s) => `<option ${F.st === s ? "selected" : ""}>${s}</option>`).join("")}
+        </select>
+        <select style="width:auto" aria-label="Page size" onchange="F.ps=+this.value;F.pg=1;tbl()">
+          ${[8, 15, 30, 50].map((n) => `<option ${F.ps === n ? "selected" : ""}>${n}</option>`).join("")}
+        </select>
+        <button class="btn" onclick="F.q=F.cat=F.st='';F.pg=1;tbl()">Clear Filters</button>
+      </div>
+      <div id="tb"><div style="text-align:center;padding:40px;color:var(--mu)"><span class="spinner" style="border-top-color:var(--navy)"></span>Loading catalog…</div></div>
+    </div>
+  `,
+          `<a class="btn p" href="#/books/add">Add Book</a><button class="btn" onclick="exportData('excel')">📥 Export Excel (.xlsx)</button><button class="btn" onclick="exportData('csv')">Export CSV</button>`,
+        );
+      };
+
+      async function tbl() {
+        const tb = $("#tb");
+        if (!tb) return;
+
+        const flashEl = $("#books_flash");
+        const flashData = sessionStorage.getItem("clms_new_book_alert");
+        if (flashEl && flashData) {
+          try {
+            const al = JSON.parse(flashData);
+            flashEl.innerHTML = `
+              <div class="card" style="background:linear-gradient(135deg, rgba(27,122,75,0.12), rgba(200,150,62,0.12));border:1.5px solid var(--ok);margin-bottom:16px;padding:16px 20px;border-radius:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-size:22px">🎉</span>
+                      <b style="font-size:15px;color:var(--ok)">Book Successfully Stored in All Books & Excel File!</b>
+                    </div>
+                    <p style="margin:4px 0 0;font-size:13px;color:var(--tx)">
+                      "<b>${esc(al.title)}</b>" (Accession: <span class="acc">${esc(al.acc)}</span>) has been saved to the library catalog and automatically recorded in <b>crescent_library_inventory.xlsx</b>.
+                    </p>
+                  </div>
+                  <div class="row" style="gap:8px">
+                    <button type="button" class="btn p" onclick="exportData('excel')" style="background:var(--ok);border-color:var(--ok);display:inline-flex;align-items:center;gap:6px">
+                      📥 Download Excel File (.xlsx)
+                    </button>
+                    <a class="btn" href="#/books/add">+ Add Another Book</a>
+                  </div>
+                </div>
+              </div>
+            `;
+            sessionStorage.removeItem("clms_new_book_alert");
+          } catch (e) {
+            sessionStorage.removeItem("clms_new_book_alert");
+          }
+        }
+
+        try {
+          const params = new URLSearchParams({
+            page: F.pg,
+            limit: F.ps,
+            sort: F.sort,
+            dir: F.dir,
+          });
+          if (F.q) params.set("q", F.q);
+          if (F.cat) params.set("cat", F.cat);
+          if (F.st) params.set("status", F.st);
+
+          const res = await api(`/books?${params.toString()}`);
+          const items = res.items || res.data || [];
+          const total = res.total || 0;
+          const pages = res.pages || res.total_pages || 1;
+          F.pg = res.page || 1;
+
+          const H = [
+            ["title", "Title"],
+            ["acc", "Accession"],
+            ["author", "Author"],
+            ["cat", "Category"],
+            ["price", "Price"],
+            ["copies", "Copies"],
+            ["shelf", "Shelf"],
+            ["status", "Status"],
+          ];
+
+          if (!items.length) {
+            tb.innerHTML = `<div style="text-align:center;padding:40px"><h2>No books found</h2><p style="color:var(--mu)">No records match your criteria in the database.</p><a class="btn p" href="#/books/add">Add Book</a></div>`;
+            return;
+          }
+
+          tb.innerHTML = `
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Cover</th>
+              ${H.map((h) => `<th onclick="F.sort='${h[0]}';F.dir=-F.dir;tbl()">${h[1]}${F.sort === h[0] ? (F.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items
+              .map(
+                (b) => `
+              <tr>
+                <td>${th(b)}</td>
+                <td><a href="#/books/${b.id || b._id}"><b>${esc(b.title)}</b></a></td>
+                <td><span class="acc" style="font-size:12px">${esc(b.acc || b.acc_no || "")}</span></td>
+                <td>${esc(b.author || "—")}</td>
+                <td>${esc(b.cat || b.category || "—")}</td>
+                <td>${fmt(b.price)}</td>
+                <td>${b.copies}</td>
+                <td>${esc(b.shelf || "—")}</td>
+                <td><span class="bdg ${b.status || "Available"}">${esc(b.status || "Available")}</span></td>
+                <td class="row">
+                  <a class="btn" href="#/books/${b.id || b._id}">View</a>
+                  <a class="btn" href="#/books/${b.id || b._id}/edit">Edit</a>
+                  <button class="btn d" onclick="delBook('${b.id || b._id}','${esc(b.title)}')">Delete</button>
+                </td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="row" style="justify-content:space-between;margin-top:12px">
+        <span>${total} book record${total === 1 ? "" : "s"} in MongoDB</span>
+        <span class="row">
+          <button class="btn" ${F.pg < 2 ? "disabled" : ""} onclick="F.pg--;tbl()">Prev</button>
+          Page ${F.pg} of ${pages}
+          <button class="btn" ${F.pg >= pages ? "disabled" : ""} onclick="F.pg++;tbl()">Next</button>
+        </span>
+      </div>
+    `;
+        } catch (err) {
+          tb.innerHTML = `<div class="card" style="color:var(--er);text-align:center;padding:24px">Failed to load books: ${esc(err.message)}</div>`;
+        }
+      }
+
+      function ask(m, okText, cb) {
+        const d = document.createElement("dialog");
+        d.setAttribute("aria-label", "Confirmation");
+        d.innerHTML = `
+    <h2 style="margin-bottom:8px">Please Confirm</h2>
+    <p style="color:var(--mu)">${esc(m)}</p>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn" id="n">Cancel</button>
+      <button class="btn p" id="y">${okText}</button>
+    </div>
+  `;
+        document.body.append(d);
+        d.showModal();
+        d.onclose = () => d.remove();
+        d.querySelector("#n").onclick = () => d.close();
+        d.querySelector("#y").onclick = () => {
+          d.close();
+          cb();
+        };
+      }
+
+      function delBook(id, title, redirectAfter = false) {
+        ask(
+          `Permanently delete "${title}" from the database? This cannot be undone.`,
+          "Delete",
+          async () => {
+            try {
+              await api(`/books/${id}`, { method: "DELETE" });
+              toast(`Book "${title}" deleted.`);
+              if (redirectAfter) go("#/books");
+              else tbl();
+            } catch (err) {
+              toast(`Delete failed: ${err.message}`, 1);
+            }
+          },
+        );
+      }
+
+      // ── Book Form (Add / Edit) ──────────────────────────────────────────────────
+      const STAT = [
+        "Available",
+        "Issued",
+        "Reserved",
+        "Lost",
+        "Damaged",
+        "Withdrawn",
+      ];
+      const FIELDS = [
+        ["title", "Book Title *"],
+        ["acc", "Accession Number * (e.g. ACC-0001)"],
+        ["isbn", "ISBN (optional)"],
+        ["author", "Author(s)"],
+        ["addl", "Additional Authors"],
+        ["publisher", "Publisher"],
+        ["edition", "Edition"],
+        ["year", "Publication Year", "number"],
+        ["cat", "Category / Subject", "sel"],
+        ["lang", "Language"],
+        [
+          "format",
+          "Format",
+          "sel",
+          ["Hardcover", "Paperback", "Reference", "Journal"],
+        ],
+        ["price", "Price (INR)", "number"],
+        ["copies", "Copies", "number"],
+        ["shelf", "Shelf Number (e.g. A-1)"],
+        ["row", "Rack / Row (e.g. Row 2)"],
+        ["date", "Date Acquired", "date"],
+        ["vendor", "Vendor / Supplier"],
+        ["invoice", "Invoice Number"],
+        ["cond", "Condition", "sel", ["New", "Good", "Fair", "Poor"]],
+        ["status", "Status", "sel", STAT],
+      ];
+
+      function form(b = {}) {
+        D = {
+          front: b.frontCover || b.front || "",
+          back: b.backCover || b.back || "",
+          frontFile: null,
+          backFile: null,
+        };
+        const ADD = ["addl", "lang", "format", "row", "vendor", "invoice"];
+        const catOptions = (S.cats || []).map((c) => c.name);
+
+        const g = (f) => {
+          const val =
+            b[f[0]] !== undefined && b[f[0]] !== null
+              ? b[f[0]]
+              : f[0] === "copies"
+                ? 1
+                : "";
+          let inputHtml;
+          if (f[2] === "sel") {
+            const opts = f[3] || catOptions;
+            inputHtml = `<select id="f_${f[0]}"><option value="">Select ${f[1]}</option>${opts.map((o) => `<option ${o === val ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+          } else {
+            inputHtml = `<input id="f_${f[0]}" type="${f[2] || "text"}" ${f[2] === "number" ? 'min="0"' : ""} value="${esc(val)}">`;
+          }
+          return `<div class="fld"><label for="f_${f[0]}" style="display:flex;align-items:center;justify-content:space-between"><span>${f[1]}</span><span id="ext_${f[0]}" class="ext-badge" style="display:none;font-size:11px;color:var(--ok);font-weight:600;background:rgba(27,122,75,0.12);padding:1px 6px;border-radius:4px">✓ Extracted</span></label>${inputHtml}<div class="err" id="fe_${f[0]}"></div></div>`;
+        };
+
+        const coverCard = (k, n) => `
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h2 style="margin:0">${n}</h2>
+        <span id="st_${k}" class="bdg" style="font-size:11px">${D[k] ? "Attached ✓" : "Optional / Recommended"}</span>
+      </div>
+      <div class="dz" id="dz_${k}" ondragover="event.preventDefault();this.classList.add('o')" ondragleave="this.classList.remove('o')" ondrop="event.preventDefault();handleFilePick('${k}',event.dataTransfer.files[0])">
+        <div class="cv" id="pv_${k}"></div>
+        <div class="row" style="justify-content:center;margin-top:10px;gap:6px">
+          <button type="button" class="btn p" onclick="openCameraCapture('${k}','${n}')" title="Direct capture using device webcam or camera">📷 Capture Photo</button>
+          <label class="btn" style="display:inline-block;cursor:pointer" for="fi_${k}">📁 Browse File</label>
+          <input id="fi_${k}" type="file" accept=".jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFilePick('${k}',this.files[0])">
+          <button type="button" class="btn d" onclick="removeCover('${k}')">Remove</button>
+        </div>
+        <p class="err" id="ce_${k}"></p>
+        <small style="display:block;margin-top:8px">Live camera capture, file upload, or drag & drop. Max 5 MB.</small>
+      </div>
+    </div>
+  `;
+
+        const bookId = b.id || b._id;
+        return `
+    <form id="bf" novalidate>
+      <div style="margin-bottom:8px">
+        <h2 style="margin:0 0 4px">Step 1: Upload or Capture Book Covers</h2>
+        <small style="color:var(--mu)">Upload or capture photos of the front cover (Title & Author) and back cover (ISBN barcode & Publisher).</small>
+      </div>
+      <div class="two">
+        ${coverCard("front", "Front Cover")}
+        ${coverCard("back", "Back Cover")}
+      </div>
+
+      <!-- Step 2: Extract Details Option -->
+      <div class="card" style="margin:16px 0;border:1.5px solid var(--gold);background:var(--sf)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-size:16px;margin:0 0 4px">Step 2: Extract Details Option</h2>
+            <div id="cover_status_badges" style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+              <span id="badge_front" class="bdg" style="background:rgba(24,58,91,0.08);color:var(--mu);font-size:12px">Front Cover: Not uploaded</span>
+              <span id="badge_back" class="bdg" style="background:rgba(24,58,91,0.08);color:var(--mu);font-size:12px">Back Cover: Not uploaded</span>
+            </div>
+            <small style="color:var(--mu);display:block;margin-top:6px">After uploading front & back covers, click "Extract Details" to scan both covers and auto-fill respective regions below.</small>
+          </div>
+          <button type="button" class="btn p" id="ocr_btn" onclick="triggerAutoExtractManual()" style="font-size:14px;padding:10px 22px;display:inline-flex;align-items:center;gap:8px" title="Extract book name and details from front and back covers into respective fields">
+            ✨ Extract Details
+          </button>
+        </div>
+        <div id="ocr_container" style="margin-top:12px"></div>
+      </div>
+
+      <!-- Step 3: Respective Regions with Manual Correction Available -->
+      <div class="card" id="step3_region">
+        <div style="margin-bottom:12px">
+          <h2 style="margin:0 0 4px">Step 3: Details Stored in Respective Regions (Manual Correction Available)</h2>
+          <small style="color:var(--mu)">Extracted details are placed in the respective input fields below. You can manually edit or correct any information before storing.</small>
+        </div>
+        <div class="fg">${FIELDS.filter((f) => !ADD.includes(f[0]))
+          .map(g)
+          .join("")}</div>
+        <details class="ad"><summary>Additional Details</summary><div class="fg">${FIELDS.filter(
+          (f) => ADD.includes(f[0]),
+        )
+          .map(g)
+          .join("")}</div></details>
+        <div class="fld">
+          <label for="f_notes" style="display:flex;align-items:center;justify-content:space-between"><span>Description / Notes</span><span id="ext_notes" class="ext-badge" style="display:none;font-size:11px;color:var(--ok);font-weight:600;background:rgba(27,122,75,0.12);padding:1px 6px;border-radius:4px">✓ Extracted</span></label>
+          <textarea id="f_notes" rows="3">${esc(b.notes || "")}</textarea>
+        </div>
+        <div class="row" style="margin-top:18px;align-items:center">
+          <button class="btn p" type="submit" id="sub_btn" style="padding:11px 24px;font-size:14px">${bookId ? "Save Changes & Update Excel" : "💾 Store in All Books & Excel File"}</button>
+          <a class="btn" href="#/books">Cancel</a>
+          <button type="button" class="btn" onclick="exportData('excel')" title="Download existing Excel workbook">📥 Download Current Excel (.xlsx)</button>
+        </div>
+      </div>
+    </form>
+  `;
+      }
+
+      function pv(k) {
+        const el = $("#pv_" + k);
+        if (!el) return;
+        const src = D[k] ? getCoverUrl(D[k]) : "";
+        el.innerHTML = src
+          ? `<img src="${src}" alt="Cover preview">`
+          : "No image selected";
+      }
+
+      function updateCoverExtractBadges() {
+        const bf = $("#badge_front");
+        const bb = $("#badge_back");
+        const sf = $("#st_front");
+        const sb = $("#st_back");
+        const hasFront = !!(D.frontFile || D.front);
+        const hasBack = !!(D.backFile || D.back);
+        if (bf) {
+          bf.className = "bdg " + (hasFront ? "Available" : "");
+          bf.style.background = hasFront
+            ? "rgba(27,122,75,0.15)"
+            : "rgba(24,58,91,0.08)";
+          bf.style.color = hasFront ? "var(--ok)" : "var(--mu)";
+          bf.textContent = hasFront
+            ? "Front Cover: Attached ✓"
+            : "Front Cover: Not uploaded";
+        }
+        if (bb) {
+          bb.className = "bdg " + (hasBack ? "Available" : "");
+          bb.style.background = hasBack
+            ? "rgba(27,122,75,0.15)"
+            : "rgba(24,58,91,0.08)";
+          bb.style.color = hasBack ? "var(--ok)" : "var(--mu)";
+          bb.textContent = hasBack
+            ? "Back Cover: Attached ✓"
+            : "Back Cover: Not uploaded";
+        }
+        if (sf) {
+          sf.textContent = hasFront ? "Attached ✓" : "Optional / Recommended";
+          sf.className = "bdg " + (hasFront ? "Available" : "");
+        }
+        if (sb) {
+          sb.textContent = hasBack ? "Attached ✓" : "Optional / Recommended";
+          sb.className = "bdg " + (hasBack ? "Available" : "");
+        }
+      }
+
+      function handleFilePick(k, file) {
+        const errEl = $("#ce_" + k);
+        if (errEl) errEl.textContent = "";
+        if (!file) return;
+        if (!/^image\/(jpeg|png|webp|jpg)$/.test(file.type)) {
+          if (errEl)
+            errEl.textContent = "Invalid format. Use JPG, PNG or WebP.";
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          if (errEl) errEl.textContent = "File exceeds 5 MB limit.";
+          return;
+        }
+
+        D[k + "File"] = file;
+        const reader = new FileReader();
+        reader.onload = () => {
+          D[k] = reader.result;
+          pv(k);
+          updateCoverExtractBadges();
+          dirty = 1;
+          toast(
+            `${k === "front" ? "Front" : "Back"} cover attached. Click "✨ Extract Details" when ready.`,
+          );
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function removeCover(k) {
+        D[k] = "";
+        D[k + "File"] = null;
+        pv(k);
+        updateCoverExtractBadges();
+        dirty = 1;
+      }
+
+      let ocrWorker = null;
+      async function getOcrWorker() {
+        if (ocrWorker) return ocrWorker;
+        if (typeof Tesseract === "undefined") {
+          throw new Error(
+            "OCR library is initializing. Please try again in a moment.",
+          );
+        }
+        ocrWorker = await Tesseract.createWorker("eng");
+        return ocrWorker;
+      }
+
+      async function triggerAutoExtractManual() {
+        const hasFront = !!(D.frontFile || D.front);
+        const hasBack = !!(D.backFile || D.back);
+
+        if (!hasFront && !hasBack) {
+          return toast(
+            "Please upload or capture front and/or back book cover first.",
+            1,
+          );
+        }
+
+        const container = $("#ocr_container");
+        const btn = $("#ocr_btn");
+        if (btn) btn.disabled = true;
+
+        if (container) {
+          container.innerHTML = `
+            <div id="ocr_status" class="card" style="margin-bottom:14px;background:rgba(24,58,91,0.06);border:1px dashed var(--gold);padding:14px 18px;border-radius:8px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="spinner" style="border-top-color:var(--navy);width:22px;height:22px"></span>
+                <div>
+                  <b style="font-size:14px">✨ Extracting Details from Uploaded Covers…</b>
+                  <div style="font-size:12px;color:var(--mu)" id="ocr_p_text">
+                    ${hasFront && hasBack ? "Scanning front & back covers for Title, Author, ISBN, Publisher, and details…" : hasFront ? "Scanning front cover for Title and Author…" : "Scanning back cover for ISBN and Publisher…"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        try {
+          let metadata = {
+            title: "",
+            author: "",
+            isbn: "",
+            publisher: "",
+            year: "",
+            edition: "",
+            notes: "",
+            category: "",
+            price: "",
+            format: "",
+          };
+
+          // Helper to turn base64 data URL into Blob
+          const dataUrlToBlob = (dataUrl) => {
+            const arr = dataUrl.split(",");
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) u8arr[n] = bstr.charCodeAt(n);
+            return new Blob([u8arr], { type: mime });
+          };
+
+          // 1. Primary High-Accuracy Neural Extraction via Backend API
+          let backendSuccess = false;
+          try {
+            const fd = new FormData();
+            if (D.frontFile) {
+              fd.append("frontCover", D.frontFile);
+            } else if (D.front && D.front.startsWith("data:")) {
+              fd.append("frontCover", dataUrlToBlob(D.front), "frontCover.jpg");
+            }
+
+            if (D.backFile) {
+              fd.append("backCover", D.backFile);
+            } else if (D.back && D.back.startsWith("data:")) {
+              fd.append("backCover", dataUrlToBlob(D.back), "backCover.jpg");
+            }
+
+            const pText = $("#ocr_p_text");
+            if (pText) pText.textContent = "Scanning covers with high-accuracy neural OCR and resolving book metadata…";
+
+            const apiRes = await api("/books/extract-details", {
+              method: "POST",
+              body: fd,
+            });
+
+            if (apiRes && apiRes.data && (apiRes.data.title || apiRes.data.isbn || apiRes.data.author)) {
+              metadata = { ...metadata, ...apiRes.data };
+              backendSuccess = true;
+            }
+          } catch (netErr) {
+            console.warn("Backend OCR extraction notice:", netErr);
+          }
+
+          // 2. Client-side OCR fallback if offline or backend returned empty
+          if (!backendSuccess || (!metadata.title && !metadata.isbn)) {
+            if (typeof Tesseract === "undefined") {
+              await new Promise((resolve, reject) => {
+                const s = document.createElement("script");
+                s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+                s.onload = resolve;
+                s.onerror = () => reject(new Error("Unable to load OCR engine"));
+                document.head.append(s);
+              });
+            }
+
+            const worker = await getOcrWorker();
+            let frontText = "";
+            let backText = "";
+
+            if (hasFront) {
+              const pText = $("#ocr_p_text");
+              if (pText) pText.textContent = "Scanning Front Cover for Title and Author…";
+              const frontSource = D.frontFile || D.front;
+              const resF = await worker.recognize(frontSource);
+              frontText = resF.data.text || "";
+            }
+
+            if (hasBack) {
+              const pText = $("#ocr_p_text");
+              if (pText) pText.textContent = "Scanning Back Cover for ISBN Barcode, Publisher and Details…";
+              const backSource = D.backFile || D.back;
+              const resB = await worker.recognize(backSource);
+              backText = resB.data.text || "";
+            }
+
+            const rawCombined = `${frontText}\n${backText}`;
+
+            // ISBN extraction from text
+            const isbn13Match = rawCombined.match(/\b(97[89][-\s]?[0-9]{1,5}[-\s]?[0-9]{2,7}[-\s]?[0-9]{1,7}[-\s]?[0-9])\b/);
+            if (isbn13Match) {
+              metadata.isbn = isbn13Match[1].replace(/[-\s]/g, "");
+            }
+
+            // Price extraction and conversion to INR
+            const convertCurrencyToInr = (text) => {
+              if (!text) return null;
+              const rates = { USD: 84.0, EUR: 92.0, GBP: 108.0, CAD: 62.0, AUD: 55.0, INR: 1.0 };
+              const inrM = text.match(/(?:₹|Rs\.?|INR)\s*([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:₹|Rs\.?|INR)/i);
+              if (inrM) { const v = parseFloat(inrM[1]); if (!isNaN(v)) return { inr: Math.round(v), original: `₹${v}` }; }
+              const gbpM = text.match(/(?:£|GBP)\s*([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:£|GBP)/i);
+              if (gbpM) { const v = parseFloat(gbpM[1]); if (!isNaN(v)) return { inr: Math.round(v * rates.GBP), original: `£${v} GBP` }; }
+              const eurM = text.match(/(?:€|EUR)\s*([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:€|EUR)/i);
+              if (eurM) { const v = parseFloat(eurM[1]); if (!isNaN(v)) return { inr: Math.round(v * rates.EUR), original: `€${v} EUR` }; }
+              const cadM = text.match(/(?:CAN\s*\$|C\s*\$|CAD)\s*([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/([0-9]+(?:\.[0-9]{2})?)\s*CAD/i);
+              if (cadM) { const v = parseFloat(cadM[1]); if (!isNaN(v)) return { inr: Math.round(v * rates.CAD), original: `C$${v} CAD` }; }
+              const audM = text.match(/(?:A\s*\$|AUD)\s*([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/([0-9]+(?:\.[0-9]{2})?)\s*AUD/i);
+              if (audM) { const v = parseFloat(audM[1]); if (!isNaN(v)) return { inr: Math.round(v * rates.AUD), original: `A$${v} AUD` }; }
+              const usdM = text.match(/(?:US\s*)?\$([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/USD\s*([0-9]+(?:\.[0-9]{2})?)/i) || text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:USD|US\b)/i);
+              if (usdM) { const v = parseFloat(usdM[1]); if (!isNaN(v)) return { inr: Math.round(v * rates.USD), original: `$${v} USD` }; }
+              const genM = text.match(/[$€£₹]([0-9]+(?:\.[0-9]{2})?)/);
+              if (genM) { const v = parseFloat(genM[1]); if (!isNaN(v)) return { inr: Math.round(v * rates.USD), original: `$${v}` }; }
+              return null;
+            };
+
+            const conv = convertCurrencyToInr(rawCombined);
+            if (conv) {
+              metadata.price = conv.inr;
+              metadata.originalPrice = conv.original;
+            }
+
+            if (/\bhardcover\b/i.test(rawCombined)) metadata.format = "Hardcover";
+            else if (/\bpaperback\b/i.test(rawCombined)) metadata.format = "Paperback";
+
+            // If ISBN was found locally, lookup in OpenLibrary
+            if (metadata.isbn) {
+              try {
+                const olRes = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${metadata.isbn}&jscmd=data&format=json`);
+                const olJson = await olRes.json();
+                const bInfo = olJson[`ISBN:${metadata.isbn}`];
+                if (bInfo) {
+                  if (bInfo.title) metadata.title = bInfo.title + (bInfo.subtitle ? `: ${bInfo.subtitle}` : "");
+                  if (bInfo.authors && bInfo.authors.length) metadata.author = bInfo.authors.map((a) => a.name).join(", ");
+                  if (bInfo.publishers && bInfo.publishers.length) metadata.publisher = bInfo.publishers.map((p) => p.name).join(", ");
+                  if (bInfo.publish_date) {
+                    const ym = bInfo.publish_date.match(/\b(19\d{2}|20[0-2]\d)\b/);
+                    if (ym) metadata.year = ym[0];
+                  }
+                  if (bInfo.subjects && bInfo.subjects.length) metadata.category = bInfo.subjects[0].name || "";
+                }
+              } catch (e) {}
+            }
+
+            // Fallback front title / author lines
+            if (!metadata.title) {
+              const frontLines = frontText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 3);
+              if (frontLines.length > 0) metadata.title = frontLines[0];
+              if (frontLines.length > 1) metadata.author = frontLines[1];
+            }
+          }
+
+
+          // 4. Populate ONLY dynamically extracted values into their respective regions
+          const populatedList = [];
+          const setFieldInRespectiveRegion = (id, val, displayName, customDisplayHtml) => {
+            const el = $("#f_" + id);
+            const badge = $("#ext_" + id);
+            if (el && val !== undefined && val !== null && val !== "") {
+              el.value = val;
+              el.style.borderColor = "var(--ok)";
+              el.style.boxShadow = "0 0 0 3px rgba(27,122,75,0.2)";
+              setTimeout(() => {
+                el.style.borderColor = "";
+                el.style.boxShadow = "";
+              }, 4000);
+              if (badge) {
+                badge.style.display = "inline-block";
+                badge.textContent = "✓ Extracted (editable)";
+              }
+              populatedList.push(`<b>${displayName}:</b> ${customDisplayHtml || esc(val)}`);
+            }
+          };
+
+          if (metadata.title)
+            setFieldInRespectiveRegion("title", metadata.title, "Title");
+          if (metadata.author)
+            setFieldInRespectiveRegion("author", metadata.author, "Author");
+          if (metadata.isbn)
+            setFieldInRespectiveRegion("isbn", metadata.isbn, "ISBN");
+          if (metadata.publisher)
+            setFieldInRespectiveRegion(
+              "publisher",
+              metadata.publisher,
+              "Publisher",
+            );
+          if (metadata.year)
+            setFieldInRespectiveRegion("year", metadata.year, "Year");
+          if (metadata.edition)
+            setFieldInRespectiveRegion("edition", metadata.edition, "Edition");
+          if (metadata.price) {
+            const priceDisplay = metadata.originalPrice
+              ? `₹${metadata.price} <span style="font-size:11px;color:var(--mu)">(Converted from ${esc(metadata.originalPrice)} to INR)</span>`
+              : `₹${metadata.price}`;
+            setFieldInRespectiveRegion("price", metadata.price, "Price (INR)", priceDisplay);
+          }
+          if (metadata.format)
+            setFieldInRespectiveRegion("format", metadata.format, "Format");
+          if (metadata.notes)
+            setFieldInRespectiveRegion(
+              "notes",
+              metadata.notes,
+              "Notes / Description",
+            );
+
+          if (metadata.category && S.cats && S.cats.length) {
+            const matched = S.cats.find(
+              (c) =>
+                c.name
+                  .toLowerCase()
+                  .includes(metadata.category.toLowerCase()) ||
+                metadata.category.toLowerCase().includes(c.name.toLowerCase()),
+            );
+            if (matched) {
+              setFieldInRespectiveRegion("cat", matched.name, "Category");
+            }
+          }
+
+          // NO mock accession or fallback insertion: accession is left for the user/library to assign
+          dirty = 1;
+
+          // 5. Render Success Banner confirming details are stored in respective regions
+          if (container) {
+            container.innerHTML = `
+              <div id="ocr_status" class="note" style="background:rgba(27,122,75,0.08);border:1.5px solid var(--ok);color:var(--tx);margin-bottom:14px;padding:14px 18px;border-radius:8px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                  <div style="flex:1">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-size:18px">✨</span>
+                      <b style="font-size:14.5px;color:var(--ok)">Details Extracted & Stored in Respective Regions!</b>
+                    </div>
+                    <div style="margin:8px 0;font-size:13px;display:flex;flex-direction:column;gap:3px">
+                      ${populatedList.map((item) => `<div>${item}</div>`).join("")}
+                    </div>
+                    <div style="font-size:12px;background:rgba(255,255,255,0.85);padding:8px 12px;border-radius:6px;border-left:3px solid var(--ok);margin-top:6px">
+                      📝 <b>Manual correction available:</b> Details are now populated in their respective regions below. You can click into any field to manually adjust or correct information before storing.
+                    </div>
+                  </div>
+                  <button type="button" class="btn" style="padding:3px 8px;font-size:11px" onclick="$('#ocr_container').innerHTML=''">✕</button>
+                </div>
+              </div>
+            `;
+          }
+
+          toast(
+            "Details extracted into respective regions! Manual corrections enabled.",
+          );
+          const step3 = document.querySelector("#step3_region");
+          if (step3)
+            step3.scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (err) {
+          console.error("OCR Extraction Error:", err);
+          if (container) {
+            container.innerHTML = `
+              <div class="note" style="margin-bottom:14px;border-color:var(--wn);color:var(--wn);display:flex;align-items:center;justify-content:space-between">
+                <span>⚠️ Extraction note: ${esc(err.message || "Could not auto-extract details")}. Please enter details manually in respective regions below.</span>
+                <button type="button" class="btn" style="padding:2px 8px;font-size:11px" onclick="$('#ocr_container').innerHTML=''">✕</button>
+              </div>
+            `;
+          }
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function openCameraCapture(slotKey, slotLabel) {
+        let stream = null;
+        let facingMode = "environment";
+        let capturedBlob = null;
+
+        const d = document.createElement("dialog");
+        d.setAttribute("aria-label", "Camera Capture: " + slotLabel);
+        d.style.cssText =
+          "width:min(600px, 94vw);padding:0;overflow:hidden;border-radius:12px;border:1px solid var(--bd);background:var(--sf);color:var(--tx)";
+
+        d.innerHTML = `
+          <div style="background:var(--navy);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">📷</span>
+              <b style="font-size:14px">${esc(slotLabel)} — Direct Camera Capture</b>
+            </div>
+            <button type="button" class="btn" id="cam_x" style="padding:2px 8px;background:transparent;color:#fff;border-color:rgba(255,255,255,0.3);font-size:16px">✕</button>
+          </div>
+          <div style="padding:16px">
+            <div id="cam_viewport" style="position:relative;width:100%;max-width:440px;margin:0 auto;aspect-ratio:3/4;background:#0a1a30;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+              <video id="cam_v" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+              <canvas id="cam_c" style="display:none;width:100%;height:100%;object-fit:cover"></canvas>
+              <div id="cam_frame" style="position:absolute;inset:14px;border:2px dashed rgba(200,169,107,0.8);border-radius:6px;pointer-events:none;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px">
+                <span style="background:rgba(0,0,0,0.65);color:#fff;font-size:11px;padding:3px 10px;border-radius:4px;letter-spacing:0.04em">Align book cover inside frame</span>
+              </div>
+              <div id="cam_spin" style="position:absolute;color:#fff;display:flex;align-items:center;gap:8px;font-size:13px">
+                <span class="spinner" style="border-top-color:var(--gold)"></span> Initializing camera…
+              </div>
+            </div>
+            <div class="err" id="cam_err_msg" style="text-align:center;margin-top:10px"></div>
+            <div class="row" style="justify-content:center;margin-top:14px;gap:8px" id="cam_live_actions">
+              <button type="button" class="btn" id="cam_flip" style="display:none">🔄 Switch Camera</button>
+              <button type="button" class="btn p" id="cam_snap" style="padding:9px 18px;font-size:14px">📸 Capture Photo</button>
+              <label class="btn" style="cursor:pointer" for="cam_native_fallback">📁 Device Camera / File</label>
+              <input type="file" id="cam_native_fallback" accept="image/*" capture="environment" style="display:none">
+            </div>
+            <div class="row" style="justify-content:center;margin-top:14px;gap:8px;display:none" id="cam_review_actions">
+              <button type="button" class="btn" id="cam_retake">↺ Retake Photo</button>
+              <button type="button" class="btn p" id="cam_use">✓ Use This Photo</button>
+            </div>
+          </div>
+        `;
+
+        document.body.append(d);
+        d.showModal();
+
+        const video = d.querySelector("#cam_v");
+        const canvas = d.querySelector("#cam_c");
+        const frame = d.querySelector("#cam_frame");
+        const spin = d.querySelector("#cam_spin");
+        const errMsg = d.querySelector("#cam_err_msg");
+        const liveActions = d.querySelector("#cam_live_actions");
+        const reviewActions = d.querySelector("#cam_review_actions");
+        const flipBtn = d.querySelector("#cam_flip");
+
+        function stopTracks() {
+          if (stream) {
+            stream.getTracks().forEach((t) => t.stop());
+            stream = null;
+          }
+        }
+
+        async function initCamera(mode) {
+          stopTracks();
+          spin.style.display = "flex";
+          errMsg.textContent = "";
+          try {
+            if (
+              !navigator.mediaDevices ||
+              !navigator.mediaDevices.getUserMedia
+            ) {
+              throw new Error(
+                "Direct camera access is not supported by your browser. Please use 'Device Camera / File'.",
+              );
+            }
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: { ideal: mode },
+                width: { ideal: 1280 },
+                height: { ideal: 960 },
+              },
+              audio: false,
+            });
+            video.srcObject = stream;
+            await video.play();
+            spin.style.display = "none";
+
+            if (navigator.mediaDevices.enumerateDevices) {
+              const devices = await navigator.mediaDevices.enumerateDevices();
+              const videoDevices = devices.filter(
+                (dev) => dev.kind === "videoinput",
+              );
+              if (videoDevices.length > 1) {
+                flipBtn.style.display = "inline-block";
+              }
+            }
+          } catch (err) {
+            spin.style.display = "none";
+            errMsg.textContent =
+              err.name === "NotAllowedError" ||
+              err.name === "PermissionDeniedError"
+                ? "Camera permission was denied. Please allow camera permissions in your browser or click 'Device Camera / File'."
+                : `Camera error: ${err.message || "Unable to access camera"}`;
+          }
+        }
+
+        initCamera(facingMode);
+
+        flipBtn.onclick = () => {
+          facingMode = facingMode === "environment" ? "user" : "environment";
+          initCamera(facingMode);
+        };
+
+        d.querySelector("#cam_snap").onclick = () => {
+          if (!video.videoWidth || !video.videoHeight) {
+            errMsg.textContent = "Camera video feed is not ready yet.";
+            return;
+          }
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.style.display = "block";
+          video.style.display = "none";
+          frame.style.display = "none";
+          liveActions.style.display = "none";
+          reviewActions.style.display = "flex";
+
+          canvas.toBlob(
+            (blob) => {
+              capturedBlob = blob;
+            },
+            "image/jpeg",
+            0.92,
+          );
+        };
+
+        d.querySelector("#cam_retake").onclick = () => {
+          capturedBlob = null;
+          canvas.style.display = "none";
+          video.style.display = "block";
+          frame.style.display = "flex";
+          reviewActions.style.display = "none";
+          liveActions.style.display = "flex";
+        };
+
+        d.querySelector("#cam_use").onclick = () => {
+          if (!capturedBlob) return;
+          const fileName = `${slotKey}_cover_${Date.now()}.jpg`;
+          const file = new File([capturedBlob], fileName, {
+            type: "image/jpeg",
+          });
+          handleFilePick(slotKey, file);
+          toast(`${slotLabel} captured and attached!`);
+          stopTracks();
+          d.close();
+        };
+
+        d.querySelector("#cam_native_fallback").onchange = (e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            handleFilePick(slotKey, file);
+            toast(`${slotLabel} photo attached!`);
+            stopTracks();
+            d.close();
+          }
+        };
+
+        d.querySelector("#cam_x").onclick = () => {
+          stopTracks();
+          d.close();
+        };
+
+        d.onclose = () => {
+          stopTracks();
+          d.remove();
+        };
+      }
+
+      function bindForm(id) {
+        pv("front");
+        pv("back");
+        updateCoverExtractBadges();
+        dirty = 0;
+        $("#bf").oninput = () => (dirty = 1);
+
+        $("#bf").onsubmit = async (e) => {
+          e.preventDefault();
+          const g = (k) => ($("#f_" + k)?.value || "").trim();
+          const er = {};
+
+          if (!g("title")) er.title = "Title is required.";
+          if (!g("acc")) er.acc = "Accession number is required.";
+          if (g("price") !== "" && +g("price") < 0)
+            er.price = "Price must be >= 0.";
+          if (
+            g("copies") !== "" &&
+            (!Number.isInteger(+g("copies")) || +g("copies") < 1)
+          )
+            er.copies = "Whole number >= 1 required.";
+
+          document
+            .querySelectorAll("[id^=fe_]")
+            .forEach((x) => (x.textContent = ""));
+          Object.entries(er).forEach(([k, m]) => {
+            if ($("#fe_" + k)) $("#fe_" + k).textContent = m;
+          });
+          if (Object.keys(er).length)
+            return toast("Please correct the highlighted errors.", 1);
+
+          const fd = new FormData();
+          FIELDS.forEach((f) => {
+            const val = g(f[0]);
+            if (val !== "") fd.append(f[0], val);
+          });
+          if (g("notes")) fd.append("notes", g("notes"));
+
+          if (D.frontFile) fd.append("frontCover", D.frontFile);
+          if (D.backFile) fd.append("backCover", D.backFile);
+
+          const btn = $("#sub_btn");
+          btn.disabled = true;
+          btn.innerHTML = `<span class="spinner"></span>Storing in All Books & Excel file…`;
+
+          try {
+            let savedBook;
+            if (id) {
+              savedBook = await api(`/books/${id}`, {
+                method: "PATCH",
+                body: fd,
+              });
+            } else {
+              savedBook = await api("/books", {
+                method: "POST",
+                body: fd,
+              });
+            }
+
+            const bookId =
+              savedBook.id ||
+              savedBook._id ||
+              (savedBook.data && (savedBook.data.id || savedBook.data._id));
+            dirty = 0;
+
+            // Flash alert stored for All Books feature
+            sessionStorage.setItem(
+              "clms_new_book_alert",
+              JSON.stringify({
+                title: g("title"),
+                acc: g("acc"),
+                author: g("author"),
+                id: bookId,
+                isEdit: !!id,
+              }),
+            );
+
+            toast(
+              id
+                ? "Book updated and Excel workbook synchronized!"
+                : "Book saved to catalog and stored in Excel file!",
+            );
+
+            // Navigate directly to All Books feature
+            go("#/books");
+          } catch (err) {
+            btn.disabled = false;
+            btn.textContent = id
+              ? "Save Changes & Update Excel"
+              : "💾 Store in All Books & Excel File";
+            toast(`Save error: ${err.message}`, 1);
+          }
+        };
+      }
+
+      function showSaveSuccessModal(savedBook, bookId, isEdit) {
+        const b = savedBook.data || savedBook;
+        const title = b.title || "Book";
+        const acc = b.acc || b.acc_no || "";
+        const d = document.createElement("dialog");
+        d.setAttribute("aria-label", "Book Saved and Stored in Excel");
+        d.style.cssText =
+          "width:min(540px, 94vw);padding:0;overflow:hidden;border-radius:12px;border:1px solid var(--bd);background:var(--sf);color:var(--tx)";
+        d.innerHTML = `
+          <div style="background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px">📊</span>
+              <b style="font-size:15px">Saved to Database & Stored in Excel!</b>
+            </div>
+            <button type="button" class="btn" id="s_close" style="padding:2px 8px;background:transparent;color:#fff;border-color:rgba(255,255,255,0.3)">✕</button>
+          </div>
+          <div style="padding:20px">
+            <h3 style="margin:0 0 6px">${esc(title)}</h3>
+            <p style="color:var(--mu);font-size:13px;margin:0 0 16px">
+              Accession: <span class="acc">${esc(acc)}</span> · Stored permanently in MongoDB Atlas and updated in <b>crescent_library_inventory.xlsx</b>.
+            </p>
+            <div class="row" style="gap:8px;justify-content:flex-end">
+              <button type="button" class="btn p" id="s_dl_excel">📥 Download Updated Excel (.xlsx)</button>
+              <button type="button" class="btn" id="s_view">View Book</button>
+              <button type="button" class="btn" id="s_add">Add Another Book</button>
+            </div>
+          </div>
+        `;
+        document.body.append(d);
+        d.showModal();
+        d.onclose = () => d.remove();
+        d.querySelector("#s_close").onclick = () => {
+          d.close();
+          go("#/books/" + bookId);
+        };
+        d.querySelector("#s_view").onclick = () => {
+          d.close();
+          go("#/books/" + bookId);
+        };
+        d.querySelector("#s_add").onclick = () => {
+          d.close();
+          go("#/books/add");
+        };
+        d.querySelector("#s_dl_excel").onclick = () => {
+          exportData("excel");
+        };
+      }
+
+      R["books/add"] = async () => {
+        try {
+          const cats = await api("/categories");
+          S.cats = Array.isArray(cats) ? cats : cats.data || [];
+        } catch (e) {}
+        return shell(
+          "Add New Book",
+          "Add a permanent record to the library catalog.",
+          form({}),
+        );
+      };
+
+      R.edit = async (id) => {
+        try {
+          const [bRes, catsRes] = await Promise.all([
+            api(`/books/${id}`),
+            api("/categories"),
+          ]);
+          const b = bRes.data || bRes;
+          S.cats = Array.isArray(catsRes) ? catsRes : catsRes.data || [];
+          return shell("Edit Book", esc(b.title), form(b));
+        } catch (err) {
+          return shell(
+            "Error",
+            "",
+            `<div class="card" style="color:var(--er)">Failed to load book: ${esc(err.message)}</div>`,
+          );
+        }
+      };
+
+      R.detail = async (id) => {
+        try {
+          const bRes = await api(`/books/${id}`);
+          const b = bRes.data || bRes;
+          const sec = (t, r) =>
+            `<div class="card"><h2 style="margin-bottom:10px">${t}</h2><dl>${r.map((x) => `<dt>${x[0]}</dt><dd>${x[1] || "—"}</dd>`).join("")}</dl></div>`;
+          const im = (path, label) => {
+            const src = getCoverUrl(path);
+            return `<div class="cv">${src ? `<img src="${src}" alt="${label}">` : `${label}: none`}</div>`;
+          };
+
+          const estVal = (b.price || 0) * (b.copies || 1);
+          const bookId = b.id || b._id;
+
+          return shell(
+            b.title,
+            `<span class="acc">${esc(b.acc || b.acc_no || "")}</span>`,
+            `
+      <div class="two">
+        ${sec("Book Information", [
+          ["Title", esc(b.title)],
+          ["Author(s)", esc(b.author)],
+          ["Additional", esc(b.addl || b.addl_authors)],
+          ["ISBN", esc(b.isbn)],
+          ["Category", esc(b.cat || b.category)],
+          ["Notes", esc(b.notes)],
+        ])}
+        ${sec("Publication Details", [
+          ["Publisher", esc(b.publisher)],
+          ["Edition", esc(b.edition)],
+          ["Year", b.year || "—"],
+          ["Language", esc(b.lang || b.language)],
+          ["Format", esc(b.format)],
+        ])}
+        ${sec("Inventory Information", [
+          [
+            "Accession No.",
+            `<span class="acc">${esc(b.acc || b.acc_no || "")}</span>`,
+          ],
+          ["Price", fmt(b.price)],
+          ["Copies", b.copies],
+          ["Est. Value", fmt(estVal)],
+          [
+            "Shelf / Row",
+            esc((b.shelf || "") + " " + (b.row || b.rack_row || "")),
+          ],
+          [
+            "Status",
+            `<span class="bdg ${b.status || "Available"}">${esc(b.status || "Available")}</span>`,
+          ],
+          ["Condition", esc(b.cond || b.condition)],
+          [
+            "Vendor / Invoice",
+            esc((b.vendor || "") + " " + (b.invoice || b.invoice_no || "")),
+          ],
+          ["Recorded", (b.createdAt || b.date || "").slice(0, 10)],
+        ])}
+        <div class="card">
+          <h2>Cover Images</h2>
+          <div class="row" style="align-items:flex-start">
+            ${im(b.frontCover || b.front, "Front Cover")}
+            ${im(b.backCover || b.back, "Back Cover")}
+          </div>
+        </div>
+      </div>
+    `,
+            `
+      <a class="btn p" href="#/books/${bookId}/edit">Edit Book</a>
+      <a class="btn" href="#/books">Back to Inventory</a>
+      <button class="btn" onclick="print()">Print Details</button>
+      <button class="btn d" onclick="delBook('${bookId}','${esc(b.title)}',true)">Delete Book</button>
+    `,
+          );
+        } catch (err) {
+          return shell(
+            "Book Not Found",
+            "",
+            `<div class="card">No book matches this ID in MongoDB. <a class="btn" href="#/books">Back to Inventory</a></div>`,
+          );
+        }
+      };
+
+      // ── Categories ──────────────────────────────────────────────────────────────
+      R.categories = async () => {
+        let cats = [];
+        try {
+          const res = await api("/categories");
+          cats = Array.isArray(res) ? res : res.data || [];
+          S.cats = cats;
+        } catch (err) {
+          return shell(
+            "Categories",
+            "",
+            `<div class="card" style="color:var(--er)">Error loading categories: ${esc(err.message)}</div>`,
+          );
+        }
+
+        return shell(
+          "Categories",
+          `${cats.length} cataloged subject divisions`,
+          `
+    <div class="card">
+      <div class="tw">
+        <table style="min-width:520px">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Books</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              cats.length
+                ? cats
+                    .map(
+                      (c) => `
+              <tr>
+                <td><b>${esc(c.name)}</b></td>
+                <td><span class="bdg Available">${c.book_count ?? c.bookCount ?? 0}</span></td>
+                <td>${esc(c.desc || c.description || "—")}</td>
+                <td class="row">
+                  <button class="btn" onclick="catDlg('${c.id || c._id}','${esc(c.name)}','${esc(c.desc || c.description || "")}')">Edit</button>
+                  <button class="btn d" onclick="delCat('${c.id || c._id}','${esc(c.name)}')">Delete</button>
+                </td>
+              </tr>
+            `,
+                    )
+                    .join("")
+                : '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--mu)">No categories found. Click "Add Category" to create one.</td></tr>'
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `,
+          `<button class="btn p" onclick="catDlg()">Add Category</button>`,
+        );
+      };
+
+      function catDlg(id = "", currName = "", currDesc = "") {
+        const d = document.createElement("dialog");
+        d.setAttribute("aria-label", id ? "Edit category" : "Add category");
+        d.innerHTML = `
+    <h2 style="margin-bottom:12px">${id ? "Edit" : "Add"} Category</h2>
+    <div class="fld">
+      <label for="cn">Category Name *</label>
+      <input id="cn" value="${esc(currName)}">
+      <div class="err" id="cne"></div>
+    </div>
+    <div class="fld">
+      <label for="cd">Description</label>
+      <input id="cd" value="${esc(currDesc)}">
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn" id="cx">Cancel</button>
+      <button class="btn p" id="cs">Save</button>
+    </div>
+  `;
+        document.body.append(d);
+        d.showModal();
+        d.onclose = () => d.remove();
+        d.querySelector("#cx").onclick = () => d.close();
+        d.querySelector("#cs").onclick = async () => {
+          const n = d.querySelector("#cn").value.trim();
+          const ds = d.querySelector("#cd").value.trim();
+          const e = d.querySelector("#cne");
+          if (!n) return (e.textContent = "Name is required.");
+
+          try {
+            if (id) {
+              await api(`/categories/${id}`, {
+                method: "PATCH",
+                body: { name: n, desc: ds },
+              });
+              toast("Category updated.");
+            } else {
+              await api("/categories", {
+                method: "POST",
+                body: { name: n, desc: ds },
+              });
+              toast("Category created.");
+            }
+            d.close();
+            R2();
+          } catch (err) {
+            e.textContent = err.message || "Operation failed";
+          }
+        };
+      }
+
+      function delCat(id, name) {
+        ask(
+          `Delete category "${name}"? Books in this category will become unassigned.`,
+          "Delete",
+          async () => {
+            try {
+              await api(`/categories/${id}`, { method: "DELETE" });
+              toast(`Category "${name}" deleted.`);
+              R2();
+            } catch (err) {
+              toast(`Error deleting category: ${err.message}`, 1);
+            }
+          },
+        );
+      }
+
+      // ── Reports & Analytics ─────────────────────────────────────────────────────
+      R.reports = async () => {
+        let rep = {
+          summary: {},
+          byCategory: [],
+          byStatus: [],
+          byYear: [],
+          byShelf: [],
+        };
+        try {
+          const res = await api("/reports/full");
+          rep = res.data || res;
+        } catch (err) {
+          return shell(
+            "Reports & Analytics",
+            "",
+            `<div class="card" style="color:var(--er)">Failed to load reports: ${esc(err.message)}</div>`,
+          );
+        }
+
+        const s = rep.summary || {};
+        return shell(
+          "Reports & Analytics",
+          "Live metrics aggregated directly from MongoDB",
+          `
+    <div class="kpi">
+      <div class="card"><span>Cataloged Titles</span><b>${s.totalBooks ?? s.total_books ?? 0}</b></div>
+      <div class="card"><span>Total Physical Copies</span><b>${s.totalCopies ?? s.total_copies ?? 0}</b></div>
+      <div class="card"><span>Subject Categories</span><b>${s.totalCategories ?? s.total_categories ?? 0}</b></div>
+      <div class="card"><span>Total Catalog Value</span><b>${fmt(s.totalValue ?? s.total_inventory_value ?? 0)}</b></div>
+    </div>
+    <div class="two">
+      <div class="card"><h2>Category Distribution</h2>${bars(rep.byCategory || rep.by_category)}</div>
+      <div class="card"><h2>Availability Status</h2>${bars(rep.byStatus || rep.by_status)}</div>
+      <div class="card"><h2>Publication Year Breakdown</h2>${bars(rep.byYear || rep.by_year)}</div>
+      <div class="card"><h2>Shelf / Stock Distribution</h2>${bars(rep.byShelf || rep.by_shelf)}</div>
+    </div>
+  `,
+          `<button class="btn p" onclick="print()">Print Report</button>`,
+        );
+      };
+
+      // ── Import / Export ─────────────────────────────────────────────────────────
+      let ieTab = "import";
+      R["import-export"] = () =>
+        shell(
+          "Import / Export",
+          "Permanent database import and export",
+          `
+  <div class="tabs" role="tablist">
+    <button class="${ieTab === "import" ? "on" : ""}" onclick="ieTab='import';R2()">Bulk CSV Import</button>
+    <button class="${ieTab === "export" ? "on" : ""}" onclick="ieTab='export';R2()">Export Records</button>
+  </div>
+  ${
+    ieTab === "import"
+      ? `
+    <div class="card">
+      <label for="csv_file">Upload CSV File</label>
+      <input id="csv_file" type="file" accept=".csv" onchange="previewImport(this.files[0])">
+      <p style="margin-top:12px">
+        <button class="btn" onclick="exportData('template')">Download Standard CSV Template</button>
+      </p>
+    </div>
+    <div id="pvw" style="margin-top:14px"></div>
+  `
+      : `
+    <div class="card row" style="gap:12px;align-items:center">
+      <button class="btn p" onclick="exportData('excel')">📥 Download Current Excel File (.xlsx)</button>
+      <button class="btn" onclick="exportData('csv')">Export All Books (CSV)</button>
+    </div>
+  `
+  }
+`,
+        );
+
+      async function exportData(type) {
+        try {
+          let endpoint = "/import-export/export";
+          let filename = "crescent_library_inventory.csv";
+          if (type === "template") {
+            endpoint = "/import-export/template";
+            filename = "clms_book_import_template.csv";
+          } else if (type === "excel") {
+            endpoint = "/import-export/excel";
+            filename = "crescent_library_inventory.xlsx";
+          }
+
+          toast(
+            `Preparing ${type === "excel" ? "Excel workbook (.xlsx)" : "CSV"} download…`,
+          );
+          const res = await api(endpoint);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.append(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          toast("Download started.");
+        } catch (err) {
+          toast(`Export error: ${err.message}`, 1);
+        }
+      }
+
+      let pendingImportFile = null;
+
+      async function previewImport(file) {
+        if (!file) return;
+        pendingImportFile = file;
+        const pvw = $("#pvw");
+        if (!pvw) return;
+        pvw.innerHTML =
+          '<div class="card"><span class="spinner" style="border-top-color:var(--navy)"></span>Analyzing CSV file…</div>';
+
+        const fd = new FormData();
+        fd.append("file", file);
+
+        try {
+          const res = await api("/import-export/preview", {
+            method: "POST",
+            body: fd,
+          });
+          const rows = res.preview || [];
+          const errors = res.errors || [];
+
+          pvw.innerHTML = `
+      <div class="card">
+        <h2>Preview: ${rows.length} records parsed (${errors.length} issues)</h2>
+        ${
+          errors.length
+            ? `<div class="note" style="border-color:var(--er);color:var(--er);background:#ffebee">Issues: ${errors
+                .slice(0, 5)
+                .map((e) => esc(e))
+                .join("; ")}</div>`
+            : ""
+        }
+        <div class="tw">
+          <table>
+            <thead><tr><th>#</th><th>Title</th><th>Accession</th><th>Author</th><th>Category</th></tr></thead>
+            <tbody>
+              ${rows
+                .map(
+                  (r, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><b>${esc(r.title)}</b></td>
+                  <td>${esc(r.acc || r.acc_no || "Auto")}</td>
+                  <td>${esc(r.author || "—")}</td>
+                  <td>${esc(r.cat || r.category || "—")}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+        <button class="btn p" style="margin-top:14px" onclick="commitImport()">Commit Import to MongoDB</button>
+      </div>
+    `;
+        } catch (err) {
+          pvw.innerHTML = `<div class="card" style="color:var(--er)">Preview failed: ${esc(err.message)}</div>`;
+        }
+      }
+
+      async function commitImport() {
+        if (!pendingImportFile) return;
+        const fd = new FormData();
+        fd.append("file", pendingImportFile);
+
+        try {
+          const res = await api("/import-export/import", {
+            method: "POST",
+            body: fd,
+          });
+          toast(`Import complete: ${res.imported} books added to MongoDB!`);
+          pendingImportFile = null;
+          go("#/books");
+        } catch (err) {
+          toast(`Import failed: ${err.message}`, 1);
+        }
+      }
+
+      // ── Profile & Settings ─────────────────────────────────────────────────────
+      R.profile = async () => {
+        try {
+          const res = await api("/auth/me");
+          currentUser = res.user || res.data || res;
+          localStorage.setItem("clms_user", JSON.stringify(currentUser));
+        } catch (e) {}
+
+        const u = currentUser || {};
+        return shell(
+          "Profile",
+          "Logged in librarian profile",
+          `
+    <div class="two">
+      <div class="card" style="max-width:520px">
+        <h2 style="margin-bottom:12px">Librarian Account Details</h2>
+        <div class="fld"><label>Full Name</label><input id="pf_name" value="${esc(u.name || "")}" disabled></div>
+        <div class="fld"><label>Institutional Email</label><input value="${esc(u.email || "")}" disabled></div>
+        <div class="fld"><label>Staff ID</label><input value="${esc(u.staffId || "—")}" disabled></div>
+        <div class="fld"><label>Department</label><input value="${esc(u.department || "Central Library")}" disabled></div>
+        <div class="fld"><label>Role</label><input value="${esc(u.role || "Librarian")}" disabled></div>
+      </div>
+      <div class="card" style="max-width:520px">
+        <h2 style="margin-bottom:12px">Change Password</h2>
+        <div class="fld">
+          <label for="cp_old">Current Password</label>
+          <div class="pw-box">
+            <input id="cp_old" type="password" autocomplete="current-password">
+            <button type="button" class="pw-toggle" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button>
+          </div>
+        </div>
+        <div class="fld">
+          <label for="cp_new">New Password</label>
+          <div class="pw-box">
+            <input id="cp_new" type="password" autocomplete="new-password">
+            <button type="button" class="pw-toggle" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button>
+          </div>
+        </div>
+        <div class="err" id="cp_err"></div>
+        <button class="btn p" onclick="updatePassword()">Update Password</button>
+      </div>
+    </div>
+  `,
+        );
+      };
+
+      async function updatePassword() {
+        const old_pw = $("#cp_old")?.value || "";
+        const new_pw = $("#cp_new")?.value || "";
+        const errEl = $("#cp_err");
+        if (errEl) errEl.textContent = "";
+
+        if (!old_pw || !new_pw) {
+          if (errEl)
+            errEl.textContent = "Both current and new password required.";
+          return;
+        }
+        if (new_pw.length < 8) {
+          if (errEl)
+            errEl.textContent = "New password must be at least 8 characters.";
+          return;
+        }
+
+        try {
+          await api("/auth/change-password", {
+            method: "POST",
+            body: { old_password: old_pw, new_password: new_pw },
+          });
+          toast("Password changed successfully.");
+          if ($("#cp_old")) $("#cp_old").value = "";
+          if ($("#cp_new")) $("#cp_new").value = "";
+        } catch (err) {
+          if (errEl)
+            errEl.textContent = err.message || "Password update failed";
+        }
+      }
+
+      R.settings = () =>
+        shell(
+          "Settings",
+          "",
+          `
+  <div class="card" style="max-width:520px">
+    <div class="fld">
+      <label>Appearance Theme</label>
+      <select onchange="document.documentElement.dataset.theme=this.value;localStorage.setItem('clms_theme',this.value)">
+        <option value="light">Light Mode</option>
+        <option value="dark" ${document.documentElement.dataset.theme === "dark" ? "selected" : ""}>Dark Mode</option>
+      </select>
+    </div>
+    <div class="fld">
+      <label>Table Page Size</label>
+      <select onchange="F.ps=+this.value;localStorage.setItem('clms_ps',this.value)">
+        ${[8, 15, 30, 50].map((n) => `<option ${F.ps === n ? "selected" : ""}>${n} records per page</option>`).join("")}
+      </select>
+    </div>
+    <div class="fld" style="margin-top:16px">
+      <label>Connected Express API</label>
+      <input value="${esc(API_BASE)}" disabled style="background:var(--bg)">
+    </div>
+  </div>
+`,
+        );
+
+      R.help = () =>
+        shell(
+          "Help & Documentation",
+          "Central Library Management System User Guide",
+          `
+  <div class="grid">
+    <div class="card"><h2>Book Acquisition</h2><p style="color:var(--mu)">Open "Add Book", upload front and back cover images, enter the unique accession number, and save directly to permanent MongoDB storage.</p></div>
+    <div class="card"><h2>Accession Numbers</h2><p style="color:var(--mu)">Accession numbers (e.g. ACC-0001) are unique serial identifiers assigned sequentially to every physical volume in the collection.</p></div>
+    <div class="card"><h2>Real-Time Inventory</h2><p style="color:var(--mu)">All searches, filters, category counts, and financial valuations query MongoDB live via the Express backend without local storage constraints.</p></div>
+    <div class="card"><h2>CSV Export & Import</h2><p style="color:var(--mu)">Download CSV exports or upload batch acquisitions using the standard CSV template format at any time.</p></div>
+  </div>
+`,
+        );
+
+      const nf = () =>
+        `<div style="text-align:center;padding:90px 5%">${logo().replace('class="wm"', 'class="wm" style="justify-content:center"')}<h1 style="margin-top:20px">Page Not Found</h1><p>The requested page does not exist.</p><a class="btn p" href="#/">Return Home</a></div>`;
+
+      // ── Main Router Dispatcher ──────────────────────────────────────────────────
+      const PROT = [
+        "dashboard",
+        "books",
+        "categories",
+        "reports",
+        "import-export",
+        "profile",
+        "settings",
+        "help",
+      ];
+
+      async function checkAuth() {
+        const token = localStorage.getItem("clms_token");
+        if (!token) {
+          auth = false;
+          currentUser = null;
+          return false;
+        }
+        try {
+          const res = await api("/auth/me");
+          currentUser = res.user || res.data || res;
+          auth = true;
+          return true;
+        } catch (e) {
+          auth = false;
+          currentUser = null;
+          localStorage.removeItem("clms_token");
+          return false;
+        }
+      }
+
+      async function R2() {
+        if (skip) {
+          skip = 0;
+          return;
+        }
+        const hh = location.hash || "#/";
+        if (dirty && cur && hh !== cur) {
+          if (!confirm("Discard unsaved form changes?")) {
+            skip = 1;
+            location.hash = cur;
+            return;
+          }
+          dirty = 0;
+        }
+        cur = hh;
+
+        const h = hh.replace(/^#\/?/, "").split("?")[0];
+        const p = h.split("/");
+
+        // Check authentication session
+        if (!currentUser && localStorage.getItem("clms_token")) {
+          await checkAuth();
+        } else if (!localStorage.getItem("clms_token")) {
+          auth = false;
+        }
+
+        if (!h && !auth) return go("#/login");
+        if (auth && (p[0] === "login" || p[0] === "register")) return go("#/");
+        if (PROT.includes(p[0]) && !auth) {
+          toast("Please sign in to access the library system.", 1);
+          return go("#/login");
+        }
+
+        $("#root").innerHTML =
+          '<div style="text-align:center;padding:120px 20px;color:var(--mu)"><span class="spinner" style="border-top-color:var(--navy);width:26px;height:26px"></span><p style="margin-top:12px;font-size:14px">Loading CLMS…</p></div>';
+
+        let html = "",
+          after = () => {};
+
+        try {
+          if (!h) {
+            html = await R[""]();
+          } else if (p[0] === "login") {
+            html = R.login();
+            after = () => bindAuth(0);
+          } else if (p[0] === "register") {
+            html = R.register();
+            after = () => bindAuth(1);
+          } else if (p[0] === "books" && p[1] === "add") {
+            html = await R["books/add"]();
+            after = () => bindForm();
+          } else if (p[0] === "books" && p[2] === "edit") {
+            html = await R.edit(p[1]);
+            after = () => bindForm(p[1]);
+          } else if (p[0] === "books" && p[1] && !p[2]) {
+            html = await R.detail(p[1]);
+          } else if (p.length === 1 && R[p[0]]) {
+            html = await R[p[0]]();
+            if (p[0] === "books") after = tbl;
+          } else {
+            html = nf();
+          }
+        } catch (err) {
+          console.error("Route Render Error:", err);
+          html = `<div class="ctr"><div class="card"><h1>Error Loading Page</h1><p style="color:var(--er)">${esc(err.message)}</p><a class="btn p" href="#/">Return Home</a></div></div>`;
+        }
+
+        $("#root").innerHTML = html;
+        after();
+        scrollTo(0, 0);
+      }
+
+      // Restore saved preferences
+      const savedTheme = localStorage.getItem("clms_theme");
+      if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+      const savedPs = localStorage.getItem("clms_ps");
+      if (savedPs) F.ps = +savedPs;
+
+      addEventListener("beforeunload", (e) => {
+        if (dirty) {
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      });
+      addEventListener("hashchange", () => R2());
+
+      // Initialize application
+      R2();
+    </script>
+  </body>
+</html>
