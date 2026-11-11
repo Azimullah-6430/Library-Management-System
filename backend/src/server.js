@@ -7,9 +7,11 @@ const PORT = process.env.PORT || 5000;
 
 (async () => {
   await connectDB();
-  const server = app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, () => {
     console.log(`\n======================================================`);
-    console.log(`🚀  Crescent Library API running on http://localhost:${PORT}`);
+    console.log(`🚀  Crescent Library API running on:`);
+    console.log(`    - http://localhost:${PORT}`);
+    console.log(`    - http://127.0.0.1:${PORT}`);
     console.log(`📚  API Base    : http://localhost:${PORT}/api/v1`);
     console.log(`❤️   Health Check: http://localhost:${PORT}/health`);
     console.log(`⚙️   Environment : ${process.env.NODE_ENV || 'development'}`);

@@ -1248,6 +1248,26 @@ exports.moveCopy = async (req, res, next) => {
     const { id } = req.params;
     const { newLocationId, newLocationCode, reason = 'RELOCATION', remarks } = req.body;
 
+    const validReasons = [
+      'INITIAL_PLACEMENT',
+      'RELOCATION',
+      'CHECKOUT',
+      'CHECKIN',
+      'AUDIT_RECONCILIATION',
+      'MAINTENANCE_RETURN',
+      'DAMAGED_TRANSFER',
+      'SHELF_CONSOLIDATION',
+      'MANUAL_OVERRIDE',
+    ];
+    const normalizedReason = validReasons.includes(String(reason || '').toUpperCase().trim())
+      ? String(reason).toUpperCase().trim()
+      : 'RELOCATION';
+    const movementRemarks = remarks
+      ? remarks.trim()
+      : reason && !validReasons.includes(String(reason).toUpperCase().trim())
+        ? String(reason).trim()
+        : null;
+
     if (!newLocationId && !newLocationCode) {
       return res.status(400).json({
         success: false,
@@ -1326,9 +1346,9 @@ exports.moveCopy = async (req, res, next) => {
         newLocationCode: targetLocation.locationCode,
         timestamp: new Date(),
         performedBy: req.user?._id,
-        reason,
+        reason: normalizedReason,
         auditStatus: 'VERIFIED',
-        remarks: remarks ? remarks.trim() : `Moved from ${prevLocCode} to ${targetLocation.locationCode}`,
+        remarks: movementRemarks || `Moved from ${prevLocCode} to ${targetLocation.locationCode}`,
       });
 
       await movementRecord.save(session ? { session } : {});

@@ -1097,43 +1097,55 @@
     <script>
       const LOGO = "./assets/logo.png";
 
-      // ── Smart API Base URL resolver ─────────────────────────────────────────────
-      function getApiBase() {
-        if (window.CLMS_API) return window.CLMS_API;
+      // ── Smart API Base URL resolver & Multi-Endpoint Failover ──────────────────
+      function getApiCandidates() {
+        const list = [];
+        if (window.CLMS_API) list.push(window.CLMS_API.replace(/\/$/, ""));
         if (window.location.protocol.startsWith("http")) {
-          // If already running directly from backend on port 5000
           if (window.location.port === "5000") {
-            return `${window.location.origin}/api/v1`;
+            list.push(`${window.location.origin}/api/v1`);
           }
-          // If served via Live Server on 127.0.0.1:5500 or localhost:5500, match the hostname
-          const host = window.location.hostname || "localhost";
-          return `http://${host}:5000/api/v1`;
+          const host = window.location.hostname;
+          if (host && host !== "localhost" && host !== "127.0.0.1") {
+            list.push(`http://${host}:5000/api/v1`);
+          }
         }
-        return "http://localhost:5000/api/v1";
+        // Prioritize 127.0.0.1 (IPv4 loopback) and localhost (IPv6/dual-stack) on port 5000
+        list.push("http://127.0.0.1:5000/api/v1");
+        list.push("http://localhost:5000/api/v1");
+        return [...new Set(list)];
+      }
+
+      function getApiBase() {
+        return getApiCandidates()[0];
       }
       let API_BASE = getApiBase();
       let backendStatus = "checking"; // "online" | "offline" | "checking"
 
       async function checkBackendHealth(silent = false) {
-        const rootUrl = API_BASE.replace("/api/v1", "");
-        const healthUrl = `${rootUrl}/health`;
+        const candidates = getApiCandidates();
         const badge = $("#header-db-badge");
 
-        try {
-          const c = new AbortController();
-          const tid = setTimeout(() => c.abort(), 3000);
-          const res = await fetch(healthUrl, { signal: c.signal });
-          clearTimeout(tid);
-          if (res.ok) {
-            backendStatus = "online";
-            if (badge) {
-              badge.className = "bdg Available";
-              badge.textContent = "Online";
+        for (const candidate of candidates) {
+          const rootUrl = candidate.replace("/api/v1", "");
+          const healthUrl = `${rootUrl}/health`;
+          try {
+            const c = new AbortController();
+            const tid = setTimeout(() => c.abort(), 2000);
+            const res = await fetch(healthUrl, { signal: c.signal });
+            clearTimeout(tid);
+            if (res.ok) {
+              API_BASE = candidate;
+              backendStatus = "online";
+              if (badge) {
+                badge.className = "bdg Available";
+                badge.textContent = "Online";
+              }
+              if (!silent) toast("Server connected and operational.");
+              return true;
             }
-            if (!silent) toast("Server connected and operational.");
-            return true;
-          }
-        } catch (_) {}
+          } catch (_) {}
+        }
 
         backendStatus = "offline";
         if (badge) {
@@ -1164,50 +1176,51 @@
         const headers = { ...(opts.headers || {}) };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
+        let bodyPayload = opts.body;
         if (
           !(opts.body instanceof FormData) &&
           opts.body &&
           typeof opts.body === "object"
         ) {
           headers["Content-Type"] = "application/json";
-          opts.body = JSON.stringify(opts.body);
+          bodyPayload = JSON.stringify(opts.body);
         }
 
         const buildUrl = (base) => (path.startsWith("http") ? path : `${base}${path}`);
-        let url = buildUrl(API_BASE);
+        const candidates = [API_BASE, ...getApiCandidates().filter((c) => c !== API_BASE)];
 
-        let res;
-        try {
-          res = await fetch(url, { ...opts, headers });
-        } catch (fetchErr) {
-          // Automatic IPv4/IPv6 localhost fallback for Windows
-          let fallbackUrl = null;
-          if (url.includes("localhost:5000")) {
-            fallbackUrl = url.replace("localhost:5000", "127.0.0.1:5000");
-          } else if (url.includes("127.0.0.1:5000")) {
-            fallbackUrl = url.replace("127.0.0.1:5000", "localhost:5000");
-          }
+        let lastErr = null;
+        let res = null;
 
-          if (fallbackUrl) {
-            try {
-              res = await fetch(fallbackUrl, { ...opts, headers });
-              API_BASE = API_BASE.includes("localhost")
-                ? API_BASE.replace("localhost", "127.0.0.1")
-                : API_BASE.replace("127.0.0.1", "localhost");
-            } catch (fallbackErr) {
-              const netErr = new Error(
-                "Cannot connect to Crescent Library backend (port 5000). Please start the backend server with 'npm start'."
-              );
-              netErr.isNetworkError = true;
-              throw netErr;
-            }
-          } else {
-            const netErr = new Error(
-              "Cannot connect to Crescent Library backend (port 5000). Please ensure server is running."
-            );
-            netErr.isNetworkError = true;
-            throw netErr;
+        for (const base of candidates) {
+          const url = buildUrl(base);
+          try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 8000);
+            res = await fetch(url, {
+              ...opts,
+              body: bodyPayload,
+              headers,
+              signal: opts.signal || controller.signal,
+            });
+            clearTimeout(timer);
+            // Connected successfully! Lock this base URL as current API_BASE
+            API_BASE = base;
+            backendStatus = "online";
+            break;
+          } catch (netErr) {
+            lastErr = netErr;
+            // continue trying alternative candidate
           }
+        }
+
+        if (!res) {
+          const netErr = new Error(
+            "Cannot connect to Crescent Library backend (port 5000). Please ensure server is running."
+          );
+          netErr.isNetworkError = true;
+          netErr.originalError = lastErr;
+          throw netErr;
         }
 
         if (res.status === 401) {

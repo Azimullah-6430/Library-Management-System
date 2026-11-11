@@ -20,20 +20,33 @@ const app = express();
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: false,
     contentSecurityPolicy: false,
   })
 );
 
-// ── CORS Configuration ──────────────────────────────────────────────────────
-app.use(
-  cors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  })
-);
-app.options('*', cors());
+// ── CORS & Private Network Access (PNA) Configuration ───────────────────────
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || origin === 'null') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Private-Network, Access-Control-Request-Method, Access-Control-Request-Headers'
+  );
+  // Support Chrome Private Network Access for localhost / 127.0.0.1 / file://
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // ── Logger ──────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
