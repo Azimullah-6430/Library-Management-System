@@ -196,6 +196,14 @@ exports.createBook = async (req, res, next) => {
 
     await syncInventoryToExcel();
 
+    // SmartShelf AI: Automatically provision physical BookCopy records and QR codes
+    try {
+      const { provisionBookCopies } = require('../utils/copyProvisioner');
+      await provisionBookCopies(book, { userId: req.user?._id });
+    } catch (provisionErr) {
+      console.warn('SmartShelf copy auto-provisioning warning:', provisionErr.message);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Book saved to catalog and automatically stored in Excel.',
@@ -315,6 +323,33 @@ exports.deleteBook = async (req, res, next) => {
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
 
+    // Protect historical inventory: Soft-withdraw copies instead of destroying historical records
+    const BookCopy = require('../models/BookCopy');
+    const BookMovement = require('../models/BookMovement');
+    const copies = await BookCopy.find({ bookId: book._id, isDeleted: false });
+
+    if (copies.length > 0) {
+      for (const copy of copies) {
+        copy.status = 'Withdrawn';
+        copy.isDeleted = true;
+        copy.deletedAt = new Date();
+        copy.updatedBy = req.user?._id;
+        await copy.save();
+
+        await BookMovement.create({
+          copyId: copy._id,
+          copyIdentifier: copy.copyId,
+          bookId: book._id,
+          previousLocationId: copy.locationId,
+          newLocationId: copy.locationId,
+          performedBy: req.user?._id,
+          reason: 'MANUAL_OVERRIDE',
+          auditStatus: 'VERIFIED',
+          remarks: `Catalog record deleted; physical copy archived as Withdrawn.`,
+        });
+      }
+    }
+
     if (book.frontCover) deleteFile(book.frontCover);
     if (book.backCover) deleteFile(book.backCover);
 
@@ -322,7 +357,10 @@ exports.deleteBook = async (req, res, next) => {
 
     await syncInventoryToExcel();
 
-    res.json({ success: true, message: `Book "${book.title}" was deleted from catalog and Excel file synced.` });
+    res.json({
+      success: true,
+      message: `Book "${book.title}" was deleted from catalog. ${copies.length} physical copy histories preserved as Withdrawn.`,
+    });
   } catch (err) {
     next(err);
   }

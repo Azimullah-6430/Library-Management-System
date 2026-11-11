@@ -26,7 +26,8 @@ const sendTokenResponse = (res, statusCode, user, message) => {
  */
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, staffId, staff_id, department } = req.body;
+    const name = req.body.name || req.body.fullName;
+    const { email, password, staffId, staff_id, department } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });

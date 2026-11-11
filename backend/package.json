@@ -7,7 +7,12 @@
     "start": "node src/server.js",
     "predev": "kill-port 5000",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "migrate:smartshelf": "node src/scripts/migrateSmartShelf.js",
+    "test:smartshelf": "node test/smartshelf.test.js",
+    "test:e2e": "node test/smartshelf_e2e_workflow.test.js",
+    "test:review": "node test/smartshelf_security_review.test.js",
+    "test": "node test/smartshelf.test.js && node test/smartshelf_e2e_workflow.test.js && node test/smartshelf_security_review.test.js"
   },
   "dependencies": {
     "@zxing/library": "^0.23.0",
@@ -24,6 +29,8 @@
     "multer": "^1.4.5-lts.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pdfkit": "^0.20.2",
+    "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
     "tesseract.js": "^7.0.0",
     "xlsx": "^0.18.5"

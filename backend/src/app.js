@@ -13,6 +13,7 @@ const bookRoutes = require('./routes/book.routes');
 const categoryRoutes = require('./routes/category.routes');
 const reportRoutes = require('./routes/report.routes');
 const importExportRoutes = require('./routes/importExport.routes');
+const smartshelfRoutes = require('./routes/smartshelf.routes');
 
 const app = express();
 
@@ -28,8 +29,11 @@ app.use(
   cors({
     origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   })
 );
+app.options('*', cors());
 
 // ── Logger ──────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
@@ -64,6 +68,7 @@ app.use(`${API_PREFIX}/books`, bookRoutes);
 app.use(`${API_PREFIX}/categories`, categoryRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/import-export`, importExportRoutes);
+app.use(`${API_PREFIX}/smartshelf`, smartshelfRoutes);
 
 // ── Frontend Static Files & SPA Fallback ────────────────────────────────────
 const frontendDir = path.resolve(__dirname, '../../crescent-library-frontend');

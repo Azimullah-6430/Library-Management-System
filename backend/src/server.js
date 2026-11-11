@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 5000;
 
 (async () => {
   await connectDB();
-  const server = app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n======================================================`);
     console.log(`🚀  Crescent Library API running on http://localhost:${PORT}`);
     console.log(`📚  API Base    : http://localhost:${PORT}/api/v1`);
