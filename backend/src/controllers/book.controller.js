@@ -194,8 +194,6 @@ exports.createBook = async (req, res, next) => {
       back: toFullUrl(req, obj.backCover),
     };
 
-    await syncInventoryToExcel();
-
     // SmartShelf AI: Automatically provision physical BookCopy records and QR codes
     try {
       const { provisionBookCopies } = require('../utils/copyProvisioner');
@@ -203,6 +201,9 @@ exports.createBook = async (req, res, next) => {
     } catch (provisionErr) {
       console.warn('SmartShelf copy auto-provisioning warning:', provisionErr.message);
     }
+
+    // Automatically store and synchronize catalog record and all physical copies in Excel workbook
+    await syncInventoryToExcel();
 
     res.status(201).json({
       success: true,

@@ -12,7 +12,8 @@
     "test:smartshelf": "node test/smartshelf.test.js",
     "test:e2e": "node test/smartshelf_e2e_workflow.test.js",
     "test:review": "node test/smartshelf_security_review.test.js",
-    "test": "node test/smartshelf.test.js && node test/smartshelf_e2e_workflow.test.js && node test/smartshelf_security_review.test.js"
+    "test:dynamic": "node test/dynamic_extraction_and_excel.test.js",
+    "test": "node test/smartshelf.test.js && node test/smartshelf_e2e_workflow.test.js && node test/smartshelf_security_review.test.js && node test/dynamic_extraction_and_excel.test.js"
   },
   "dependencies": {
     "@zxing/library": "^0.23.0",

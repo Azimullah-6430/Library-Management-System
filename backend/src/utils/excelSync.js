@@ -88,6 +88,25 @@ const syncInventoryToExcel = async () => {
           ]
     );
 
+    // Auto-calculate optimal column widths for Excel readability
+    const autoFitCols = (dataRows) => {
+      if (!dataRows || !dataRows.length) return [];
+      const keys = Object.keys(dataRows[0]);
+      return keys.map((k) => {
+        let maxLen = k.length;
+        for (let i = 0; i < Math.min(dataRows.length, 100); i++) {
+          const v = dataRows[i][k];
+          const len = v !== null && v !== undefined ? String(v).length : 0;
+          if (len > maxLen) maxLen = len;
+        }
+        return { wch: Math.min(65, Math.max(12, maxLen + 3)) };
+      });
+    };
+
+    if (rows.length) {
+      worksheet['!cols'] = autoFitCols(rows);
+    }
+
     // Copy-level sheet rows
     const copyRows = copies.map((c, idx) => {
       const loc = c.locationId || {};
@@ -129,6 +148,10 @@ const syncInventoryToExcel = async () => {
             },
           ]
     );
+
+    if (copyRows.length) {
+      copyWorksheet['!cols'] = autoFitCols(copyRows);
+    }
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Catalog Inventory');
