@@ -121,7 +121,7 @@ function convertToINR(text) {
 
   // 1. Explicit INR / Rupees
   const inrM = text.match(/(?:₹|Rs\.?|INR)\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:₹|Rs\.?|INR)/i);
+    text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:₹|Rs\.?|INR)/i);
   if (inrM) {
     const v = parseFloat(inrM[1]);
     if (!isNaN(v) && v > 0) return { inr: Math.round(v), original: `₹${v}`, currency: 'INR' };
@@ -129,7 +129,7 @@ function convertToINR(text) {
 
   // 2. GBP (£)
   const gbpM = text.match(/(?:£|GBP)\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:£|GBP)/i);
+    text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:£|GBP)/i);
   if (gbpM) {
     const v = parseFloat(gbpM[1]);
     if (!isNaN(v) && v > 0) return { inr: Math.round(v * rates.GBP), original: `£${v} GBP`, currency: 'GBP' };
@@ -137,7 +137,7 @@ function convertToINR(text) {
 
   // 3. EUR (€)
   const eurM = text.match(/(?:€|EUR)\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:€|EUR)/i);
+    text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:€|EUR)/i);
   if (eurM) {
     const v = parseFloat(eurM[1]);
     if (!isNaN(v) && v > 0) return { inr: Math.round(v * rates.EUR), original: `€${v} EUR`, currency: 'EUR' };
@@ -145,7 +145,7 @@ function convertToINR(text) {
 
   // 4. CAD (CAN$ / C$)
   const cadM = text.match(/(?:CAN\s*\$|C\s*\$|CAD)\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/([0-9]+(?:\.[0-9]{2})?)\s*CAD/i);
+    text.match(/([0-9]+(?:\.[0-9]{2})?)\s*CAD/i);
   if (cadM) {
     const v = parseFloat(cadM[1]);
     if (!isNaN(v) && v > 0) return { inr: Math.round(v * rates.CAD), original: `C$${v} CAD`, currency: 'CAD' };
@@ -153,7 +153,7 @@ function convertToINR(text) {
 
   // 5. AUD (A$ / AUD)
   const audM = text.match(/(?:A\s*\$|AUD)\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/([0-9]+(?:\.[0-9]{2})?)\s*AUD/i);
+    text.match(/([0-9]+(?:\.[0-9]{2})?)\s*AUD/i);
   if (audM) {
     const v = parseFloat(audM[1]);
     if (!isNaN(v) && v > 0) return { inr: Math.round(v * rates.AUD), original: `A$${v} AUD`, currency: 'AUD' };
@@ -161,8 +161,8 @@ function convertToINR(text) {
 
   // 6. USD ($)
   const usdM = text.match(/(?:US\s*)?\$([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/USD\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
-               text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:USD|US\b)/i);
+    text.match(/USD\s*([0-9]+(?:\.[0-9]{2})?)/i) ||
+    text.match(/([0-9]+(?:\.[0-9]{2})?)\s*(?:USD|US\b)/i);
   if (usdM) {
     const v = parseFloat(usdM[1]);
     if (!isNaN(v) && v > 0) return { inr: Math.round(v * rates.USD), original: `$${v} USD`, currency: 'USD' };
@@ -476,7 +476,7 @@ async function extractBookMetadata(frontPath, backPath) {
   // 6. Edition Detection
   let edition = '';
   const editionMatch = combinedText.match(/\b([1-9]|1[0-9])(?:st|nd|rd|th)\s+(?:Edition|Ed\.?)\b/i) ||
-                       combinedText.match(/\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|Revised|International|Special)\s+Edition\b/i);
+    combinedText.match(/\b(First|Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth|Tenth|Revised|International|Special)\s+Edition\b/i);
   if (editionMatch) {
     edition = toTitleCase(editionMatch[0].trim());
   }
@@ -529,7 +529,7 @@ async function extractBookMetadata(frontPath, backPath) {
   // 10. Year Detection from text
   let year = '';
   const yearMatch = combinedText.match(/(?:©|copyright|\(c\))\s*(19\d{2}|20[0-2]\d)/i) ||
-                    combinedText.match(/\b(19\d{2}|20[0-2]\d)\b/);
+    combinedText.match(/\b(19\d{2}|20[0-2]\d)\b/);
   if (yearMatch) {
     year = yearMatch[1];
   }

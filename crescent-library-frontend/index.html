@@ -1117,9 +1117,6 @@
       async function checkBackendHealth(silent = false) {
         const rootUrl = API_BASE.replace("/api/v1", "");
         const healthUrl = `${rootUrl}/health`;
-        const dot = $("#server-status-dot");
-        const txt = $("#server-status-text");
-        const banner = $("#server-offline-banner");
         const badge = $("#header-db-badge");
 
         try {
@@ -1129,25 +1126,19 @@
           clearTimeout(tid);
           if (res.ok) {
             backendStatus = "online";
-            if (dot) dot.style.background = "#10b981";
-            if (txt) txt.textContent = "Backend Online (Port 5000)";
-            if (banner) banner.style.display = "none";
             if (badge) {
               badge.className = "bdg Available";
-              badge.textContent = "Backend & Atlas Online";
+              badge.textContent = "Online";
             }
-            if (!silent) toast("Backend server is connected and healthy!");
+            if (!silent) toast("Server connected and operational.");
             return true;
           }
         } catch (_) {}
 
         backendStatus = "offline";
-        if (dot) dot.style.background = "#ef4444";
-        if (txt) txt.textContent = "Backend Offline (Port 5000)";
-        if (banner) banner.style.display = "block";
         if (badge) {
           badge.className = "bdg Lost";
-          badge.textContent = "Backend Offline";
+          badge.textContent = "Offline";
         }
         return false;
       }
@@ -1416,32 +1407,15 @@
             `<div class="pw-box"><input id="${id}" type="password" autocomplete="${reg ? "new-password" : "current-password"}"><button type="button" class="pw-toggle" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button></div>`,
           );
 
-        return `<div class="ctr">
-          <div class="card" style="position:relative">
-            <div style="text-align:center">
-              <img src="${LOGO}" width="76" height="76" alt="Crescent logo" style="border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
-              <div style="font-weight:700;margin-top:10px;line-height:1.35;font-size:15px">B.S. Abdur Rahman Crescent Institute of Science and Technology</div>
-              <div style="color:var(--mu);font-size:13px;margin-top:2px">Central Library Management System</div>
+        return `<div class="ctr" style="min-height:82vh;display:flex;align-items:center;justify-content:center;padding:24px 16px">
+          <div class="card" style="position:relative;max-width:440px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.06);border-radius:12px;padding:32px 28px">
+            <div style="text-align:center;margin-bottom:20px">
+              <img src="${LOGO}" width="76" height="76" alt="Crescent Institute Logo" style="border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.1)">
+              <div style="font-weight:700;margin-top:12px;line-height:1.35;font-size:15px;color:var(--tx)">B.S. Abdur Rahman Crescent Institute of Science and Technology</div>
+              <div style="color:var(--mu);font-size:13px;margin-top:3px">Central Library Management System</div>
             </div>
 
-            <!-- Backend Connection Status Pill -->
-            <div id="auth-server-status" style="margin:14px 0 10px;padding:6px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:1px solid var(--bd)">
-              <span style="display:flex;align-items:center;gap:6px">
-                <span id="server-status-dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${backendStatus === "offline" ? "#ef4444" : "#10b981"}"></span>
-                <span id="server-status-text" style="font-weight:600;color:var(--tx)">${backendStatus === "offline" ? "Backend Offline (Port 5000)" : "Backend Online (Port 5000)"}</span>
-              </span>
-              <button type="button" class="btn gh sm" style="padding:2px 8px;font-size:11px" onclick="checkBackendHealth(false)">Check Status</button>
-            </div>
-
-            <!-- Server Offline Guidance Banner -->
-            <div id="server-offline-banner" style="display:${backendStatus === "offline" ? "block" : "none"};margin-bottom:14px;padding:10px 12px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:12px;line-height:1.45">
-              <strong>⚠️ Backend Server is Offline</strong><br>
-              Cannot reach <code style="background:#fee2e2;padding:1px 4px;border-radius:3px">http://localhost:5000</code>. To start it:<br>
-              1. Open terminal in project root &amp; run <code style="background:#fee2e2;padding:2px 4px;border-radius:4px;font-weight:700">npm start</code><br>
-              2. Or double-click <code style="background:#fee2e2;padding:2px 4px;border-radius:4px;font-weight:700">start-server.bat</code>
-            </div>
-
-            <h1 style="text-align:center;font-size:22px;margin:16px 0 14px">${reg ? "Create Librarian Account" : "Librarian Sign In"}</h1>
+            <h1 style="text-align:center;font-size:22px;margin:0 0 20px;font-weight:700;letter-spacing:-0.02em">${reg ? "Create Librarian Account" : "Librarian Sign In"}</h1>
 
             <form id="af" novalidate>
               ${reg ? fl("name", "Full Name *", "text", "", "") : ""}
@@ -1449,21 +1423,10 @@
               ${reg ? fl("staffId", "Staff / Faculty ID", "text", "", "") : ""}
               ${pwf("pw", "Password *")}
               ${reg ? `<small style="color:var(--mu);display:block;margin:-4px 0 8px">Minimum 8 characters.</small>${pwf("pw2", "Confirm Password *")}` : ""}
-              <button class="btn p" style="width:100%;margin-top:14px" id="sb">${reg ? "Register Account" : "Sign In"}</button>
+              <button class="btn p" style="width:100%;margin-top:18px;padding:12px;font-size:14.5px;font-weight:600" id="sb">${reg ? "Register Account" : "Sign In"}</button>
             </form>
 
-            ${!reg ? `
-            <!-- Quick Demo Credentials Box -->
-            <div style="margin-top:14px;padding:8px 12px;background:rgba(212,175,55,0.08);border:1px dashed var(--gold);border-radius:8px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
-              <div>
-                <strong style="color:var(--tx)">Demo Administrator:</strong>
-                <div style="color:var(--mu);font-size:11px">librarian@crescent.edu.in</div>
-              </div>
-              <button type="button" class="btn gh sm" style="white-space:nowrap;font-size:11px" onclick="fillDemoCreds()">Use Demo</button>
-            </div>
-            ` : ""}
-
-            <div style="text-align:center;margin-top:16px;font-size:13px">
+            <div style="text-align:center;margin-top:20px;font-size:13px">
               <a href="${reg ? "#/login" : "#/register"}" style="color:var(--navy);font-weight:600">
                 ${reg ? "Already registered? Sign In" : "New librarian? Register account"}
               </a>
@@ -1472,16 +1435,7 @@
         </div>`;
       }
 
-      window.fillDemoCreds = () => {
-        const e = $("#email");
-        const p = $("#pw");
-        if (e) e.value = "librarian@crescent.edu.in";
-        if (p) p.value = "Librarian@123";
-        document.querySelectorAll(".err").forEach((x) => (x.textContent = ""));
-      };
-
       function bindAuth(reg) {
-        checkBackendHealth(true);
 
         // Clear error text on user input
         ["name", "email", "staffId", "pw", "pw2"].forEach((id) => {
@@ -1572,14 +1526,8 @@
             sb.textContent = reg ? "Register Account" : "Sign In";
 
             if (err.isNetworkError || err.message === "Failed to fetch") {
-              const banner = $("#server-offline-banner");
-              if (banner) banner.style.display = "block";
-              const dot = $("#server-status-dot");
-              if (dot) dot.style.background = "#ef4444";
-              const txt = $("#server-status-text");
-              if (txt) txt.textContent = "Backend Offline (Port 5000)";
               toast(
-                "Cannot connect to server. Please start the backend using 'npm start' or start-server.bat.",
+                "Unable to connect to the library server. Please check your network connection and try again.",
                 1,
               );
               return;
