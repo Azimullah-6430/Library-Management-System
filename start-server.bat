@@ -25,13 +25,6 @@ if not exist "backend\node_modules" (
 echo [3/3] Starting Crescent Library Server on port 5000...
 echo.
 echo Application will be available at: http://localhost:5000
-echo Default Admin credentials:
-echo   Email    : librarian@crescent.edu.in
-echo   Password : Librarian@123
-echo.
-echo Registered Librarian credentials:
-echo   Email    : azim6@gmail.com
-echo   Password : azim@2006
 echo.
 echo (Press Ctrl+C in this window anytime to stop the server)
 echo ========================================================

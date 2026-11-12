@@ -2700,8 +2700,8 @@
             <div class="row" style="justify-content:center;margin-top:14px;gap:8px" id="cam_live_actions">
               <button type="button" class="btn" id="cam_flip" style="display:none">🔄 Switch Camera</button>
               <button type="button" class="btn p" id="cam_snap" style="padding:9px 18px;font-size:14px">📸 Capture Photo</button>
-              <label class="btn" style="cursor:pointer" for="cam_native_fallback">📁 Device Camera / File</label>
-              <input type="file" id="cam_native_fallback" accept="image/*" capture="environment" style="display:none">
+              <label class="btn" style="cursor:pointer" for="cam_native_upload">📁 Upload Image / Camera</label>
+              <input type="file" id="cam_native_upload" accept="image/*" capture="environment" style="display:none">
             </div>
             <div class="row" style="justify-content:center;margin-top:14px;gap:8px;display:none" id="cam_review_actions">
               <button type="button" class="btn" id="cam_retake">↺ Retake Photo</button>
@@ -2826,7 +2826,7 @@
           d.close();
         };
 
-        d.querySelector("#cam_native_fallback").onchange = (e) => {
+        d.querySelector("#cam_native_upload").onchange = (e) => {
           const file = e.target.files?.[0];
           if (file) {
             handleFilePick(slotKey, file);
@@ -3640,9 +3640,9 @@
         <!-- Camera Viewport Container -->
         <div id="qr_camera_viewport" style="display:none;width:100%;max-width:440px;margin:0 auto 16px;border-radius:12px;overflow:hidden;border:2.5px solid var(--navy);box-shadow:0 4px 14px rgba(0,0,0,0.1)"></div>
 
-        <!-- Manual Accession / Opaque Token Fallback -->
+        <!-- Manual Accession / Opaque Token Input -->
         <div style="border-top:1px solid var(--bd);padding-top:16px;margin-top:12px;text-align:left">
-          <label for="scan_input" style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Manual Accession ID or QR Token Fallback:</label>
+          <label for="scan_input" style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px">Manual Accession ID or QR Identifier:</label>
           <div style="display:flex;gap:8px">
             <input id="scan_input" placeholder="e.g. ACC-1001-C01 or CLMS-QID-50B1CF7A4CBB7541A4060C78" value="${esc(paramQid)}" style="font-family:monospace;font-size:13px;flex:1">
             <button class="btn p" id="btn_do_scan" onclick="executeScanLookup()">Resolve Volume</button>
@@ -3689,7 +3689,7 @@
         if (typeof Html5Qrcode === "undefined") {
           if (alertBox) {
             alertBox.style.display = "block";
-            alertBox.innerHTML = `⚠️ <b>QR Scanner Library Loading:</b> Camera scanning component is loading from CDN. Please check connection or use the manual search fallback below.`;
+            alertBox.innerHTML = `⚠️ <b>QR Scanner Component:</b> Camera scanning component is initializing. You can also search directly using the manual identifier input below.`;
           }
           return;
         }
@@ -7057,20 +7057,11 @@
           auth = true;
           return true;
         } catch (e) {
+          auth = false;
+          currentUser = null;
           if (e.status === 401) {
-            auth = false;
-            currentUser = null;
             localStorage.removeItem("clms_token");
-            return false;
-          }
-          // If offline / network error, preserve cached user so offline UX stays consistent
-          const cached = localStorage.getItem("clms_user");
-          if (cached) {
-            try {
-              currentUser = JSON.parse(cached);
-              auth = true;
-              return true;
-            } catch (_) {}
+            localStorage.removeItem("clms_user");
           }
           return false;
         }
