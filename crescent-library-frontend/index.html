@@ -1154,6 +1154,7 @@
         }
         return false;
       }
+      checkBackendHealth(true);
 
       const fmt = (n) =>
         new Intl.NumberFormat("en-IN", {
@@ -1223,43 +1224,42 @@
           throw netErr;
         }
 
-        if (res.status === 401) {
-          localStorage.removeItem("clms_token");
-          localStorage.removeItem("clms_user");
-          auth = false;
-          currentUser = null;
-          if (
-            !location.hash.includes("login") &&
-            !location.hash.includes("register")
-          ) {
-            toast("Session expired or unauthorized. Please sign in.", 1);
-            go("#/login");
-          }
-          const err = new Error("Unauthorized");
-          err.status = 401;
-          throw err;
-        }
-
         const ct = res.headers.get("content-type") || "";
+        let data = null;
         if (ct.includes("application/json")) {
-          const data = await res.json();
-          if (!res.ok) {
-            const err = new Error(
-              data.message || data.detail || "API request failed"
-            );
-            err.status = res.status;
-            err.data = data;
-            throw err;
-          }
-          return data;
+          try {
+            data = await res.json();
+          } catch (_) {}
         }
 
         if (!res.ok) {
-          const err = new Error(res.statusText || "API request failed");
+          const errMsg = data?.message || data?.detail || res.statusText || "API request failed";
+          const err = new Error(errMsg);
           err.status = res.status;
+          err.data = data;
+
+          if (res.status === 401) {
+            if (
+              !path.includes("/auth/login") &&
+              !path.includes("/auth/register")
+            ) {
+              localStorage.removeItem("clms_token");
+              localStorage.removeItem("clms_user");
+              auth = false;
+              currentUser = null;
+              if (
+                !location.hash.includes("login") &&
+                !location.hash.includes("register")
+              ) {
+                toast("Session expired or unauthorized. Please sign in.", 1);
+                go("#/login");
+              }
+            }
+          }
           throw err;
         }
-        return res;
+
+        return data !== null ? data : res;
       }
 
       // ── Application State (Populated strictly from live Backend API) ─────────────
@@ -1409,7 +1409,6 @@
       }
 
       function authPage(reg) {
-        const lastEmail = localStorage.getItem("clms_last_email") || "";
         const fl = (id, l, t = "text", x = "", val = "") =>
           `<div class="fld"><label for="${id}">${l}</label>${x || `<input id="${id}" type="${t}" value="${esc(val)}">`}<div class="err" id="e_${id}"></div></div>`;
         const pwf = (id, l) =>
@@ -1432,7 +1431,7 @@
 
             <form id="af" novalidate>
               ${reg ? fl("name", "Full Name *", "text", "", "") : ""}
-              ${fl("email", "Institutional Email *", "email", "", lastEmail)}
+              ${fl("email", "Institutional Email *", "email", "", "")}
               ${reg ? fl("staffId", "Staff / Faculty ID", "text", "", "") : ""}
               ${pwf("pw", "Password *")}
               ${reg ? `<small style="color:var(--mu);display:block;margin:-4px 0 8px">Minimum 8 characters.</small>${pwf("pw2", "Confirm Password *")}` : ""}
@@ -1524,7 +1523,6 @@
             localStorage.setItem("clms_token", token);
             currentUser = res.user;
             localStorage.setItem("clms_user", JSON.stringify(res.user));
-            localStorage.setItem("clms_last_email", v("email"));
             auth = true;
 
             sb.innerHTML = "✓ Signed in!";
@@ -1553,7 +1551,7 @@
                 (err.message && err.message.toLowerCase().includes("already exists")))
             ) {
               if ($("#e_email")) {
-                $("#e_email").innerHTML = `An account with this email already exists. <a href="#/login" style="color:var(--navy);font-weight:700;text-decoration:underline" onclick="localStorage.setItem('clms_last_email','${esc(v("email"))}')">Sign in here →</a>`;
+                $("#e_email").innerHTML = `An account with this email already exists. <a href="#/login" style="color:var(--navy);font-weight:700;text-decoration:underline">Sign in here →</a>`;
               }
               toast("This email is already registered. Please sign in instead.", 1);
               return;
@@ -1575,10 +1573,12 @@
       }
 
       function doLogout() {
-        localStorage.removeItem("clms_token");
-        localStorage.removeItem("clms_user");
+        localStorage.clear();
+        sessionStorage.clear();
         auth = false;
         currentUser = null;
+        S = { books: [] };
+        F = { q: "", cat: "", status: "", shelf: "", sort: "title", dir: "1", pg: 1, ps: 15 };
         toast("Signed out successfully.");
         go("#/login");
       }
@@ -1966,7 +1966,11 @@
         <select style="width:auto" aria-label="Page size" onchange="F.ps=+this.value;F.pg=1;tbl()">
           ${[8, 15, 30, 50].map((n) => `<option ${F.ps === n ? "selected" : ""}>${n}</option>`).join("")}
         </select>
-        <button class="btn" onclick="F.q=F.cat=F.st='';F.pg=1;tbl()">Clear Filters</button>
+        <select style="width:auto" aria-label="Ownership" onchange="F.my_books=this.value;F.pg=1;tbl()">
+          <option value="">All Registered Books</option>
+          <option value="true" ${F.my_books === "true" ? "selected" : ""}>My Registered Books Only</option>
+        </select>
+        <button class="btn" onclick="F.q=F.cat=F.st=F.my_books='';F.pg=1;tbl()">Clear Filters</button>
       </div>
       <div id="tb"><div style="text-align:center;padding:40px;color:var(--mu)"><span class="spinner" style="border-top-color:var(--navy)"></span>Loading catalog…</div></div>
     </div>
@@ -2021,6 +2025,7 @@
           if (F.q) params.set("q", F.q);
           if (F.cat) params.set("cat", F.cat);
           if (F.st) params.set("status", F.st);
+          if (F.my_books) params.set("my_books", F.my_books);
 
           const res = await api(`/books?${params.toString()}`);
           const items = res.items || res.data || [];
@@ -2060,7 +2065,11 @@
                 (b) => `
               <tr>
                 <td>${th(b)}</td>
-                <td><a href="#/books/${b.id || b._id}"><b>${esc(b.title)}</b></a></td>
+                <td>
+                  <a href="#/books/${b.id || b._id}"><b>${esc(b.title)}</b></a>
+                  ${b.isOwner ? '<span style="display:inline-block;margin-left:6px;font-size:10.5px;padding:1px 6px;border-radius:4px;background:rgba(27,122,75,0.12);color:var(--ok);font-weight:600">Mine</span>' : ''}
+                  ${b.createdByName && !b.isOwner ? `<small style="display:block;color:var(--mu);font-size:11px">by ${esc(b.createdByName)}</small>` : ''}
+                </td>
                 <td><span class="acc" style="font-size:12px">${esc(b.acc || b.acc_no || "")}</span></td>
                 <td>${esc(b.author || "—")}</td>
                 <td>${esc(b.cat || b.category || "—")}</td>
@@ -3084,6 +3093,12 @@
             esc((b.vendor || "") + " " + (b.invoice || b.invoice_no || "")),
           ],
           ["Recorded", (b.createdAt || b.date || "").slice(0, 10)],
+          [
+            "Registered By",
+            b.createdByName
+              ? `<span style="font-weight:600">${esc(b.createdByName)}${b.createdByStaffId ? ` (${esc(b.createdByStaffId)})` : ""}${b.isOwner ? ' <span class="bdg Available" style="font-size:10px">You</span>' : ""}</span>`
+              : "Librarian",
+          ],
         ])}
         <div class="card">
           <h2>Cover Images</h2>
@@ -5424,6 +5439,10 @@
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
         <input id="mov_filter_q" placeholder="Filter movements by volume ID, title, location, or reason…" oninput="filterMovementsTable(this.value)" style="flex:1;min-width:280px">
+        <select id="mov_filter_mine" onchange="filterMovementsMine(this.value)" style="width:auto">
+          <option value="">All Movements</option>
+          <option value="mine">My Movements Only</option>
+        </select>
         <div style="display:flex;gap:8px">
           <a class="btn" href="#/smartshelf/locations">🏢 Locations</a>
           <a class="btn" href="#/smartshelf/copies">📚 Physical Copies</a>
@@ -5478,6 +5497,19 @@
         trs.forEach(tr => {
           const text = tr.innerText.toLowerCase();
           tr.style.display = text.includes(needle) ? "" : "none";
+        });
+      };
+
+      window.filterMovementsMine = (val) => {
+        const myName = (currentUser?.name || "").toLowerCase().trim();
+        const trs = document.querySelectorAll("#movements_master_table tbody tr");
+        trs.forEach(tr => {
+          if (!val) {
+            tr.style.display = "";
+            return;
+          }
+          const librarianCell = tr.cells[5]?.innerText.toLowerCase() || "";
+          tr.style.display = librarianCell.includes(myName) ? "" : "none";
         });
       };
 

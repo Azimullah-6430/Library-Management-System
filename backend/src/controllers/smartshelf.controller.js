@@ -1416,12 +1416,17 @@ exports.getCopyMovementHistory = async (req, res, next) => {
  */
 exports.getAllMovements = async (req, res, next) => {
   try {
-    const { copyId, bookId, reason, page = 1, limit = 25 } = req.query;
+    const { copyId, bookId, reason, my_movements, performedBy, page = 1, limit = 25 } = req.query;
     const filter = {};
 
     if (copyId) filter.copyIdentifier = { $regex: copyId.trim(), $options: 'i' };
     if (bookId) filter.bookId = bookId;
     if (reason) filter.reason = reason;
+    if (my_movements === 'true' && req.user?._id) {
+      filter.performedBy = req.user._id;
+    } else if (performedBy) {
+      filter.performedBy = performedBy;
+    }
 
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
@@ -2429,9 +2434,17 @@ exports.completeAudit = async (req, res, next) => {
  */
 exports.getAudits = async (req, res, next) => {
   try {
-    const audits = await InventoryAudit.find()
+    const { my_audits, startedBy } = req.query;
+    const filter = {};
+    if (my_audits === 'true' && req.user?._id) {
+      filter.startedBy = req.user._id;
+    } else if (startedBy) {
+      filter.startedBy = startedBy;
+    }
+
+    const audits = await InventoryAudit.find(filter)
       .populate('locationId', 'locationCode building floor section shelf')
-      .populate('startedBy', 'name email')
+      .populate('startedBy', 'name email role staffId')
       .sort({ createdAt: -1 })
       .lean();
 

@@ -32,6 +32,8 @@ exports.getBooks = async (req, res, next) => {
       category = '',
       status = '',
       shelf = '',
+      my_books = '',
+      createdBy = '',
       sort = 'createdAt',
       dir = '-1',
       page = '1',
@@ -42,6 +44,13 @@ exports.getBooks = async (req, res, next) => {
     } = req.query;
 
     const filter = {};
+
+    // User-specific data filtering: support showing books created by specific librarian
+    if (my_books === 'true' && req.user?._id) {
+      filter.createdBy = req.user._id;
+    } else if (createdBy) {
+      filter.createdBy = createdBy;
+    }
 
     // Search query
     if (q.trim()) {
@@ -82,8 +91,18 @@ exports.getBooks = async (req, res, next) => {
     const [total, books] = await Promise.all([
       Book.countDocuments(filter),
       all === 'true'
-        ? Book.find(filter).sort({ [sortField]: sortDir }).lean()
-        : Book.find(filter).sort({ [sortField]: sortDir }).skip(skip).limit(limitNum).lean(),
+        ? Book.find(filter)
+            .populate('createdBy', 'name email staffId role')
+            .populate('updatedBy', 'name email staffId role')
+            .sort({ [sortField]: sortDir })
+            .lean()
+        : Book.find(filter)
+            .populate('createdBy', 'name email staffId role')
+            .populate('updatedBy', 'name email staffId role')
+            .sort({ [sortField]: sortDir })
+            .skip(skip)
+            .limit(limitNum)
+            .lean(),
     ]);
 
     const formatted = books.map((b) => ({
@@ -100,6 +119,10 @@ exports.getBooks = async (req, res, next) => {
       back: toFullUrl(req, b.backCover),
       frontCover: toFullUrl(req, b.frontCover),
       backCover: toFullUrl(req, b.backCover),
+      createdByName: b.createdBy?.name || '',
+      createdByEmail: b.createdBy?.email || '',
+      createdByStaffId: b.createdBy?.staffId || '',
+      isOwner: req.user?._id && b.createdBy?._id ? b.createdBy._id.toString() === req.user._id.toString() : false,
     }));
 
     const totalPages = Math.max(1, Math.ceil(total / limitNum));
@@ -125,7 +148,10 @@ exports.getBooks = async (req, res, next) => {
  */
 exports.getBook = async (req, res, next) => {
   try {
-    const book = await Book.findById(req.params.id).lean();
+    const book = await Book.findById(req.params.id)
+      .populate('createdBy', 'name email staffId role')
+      .populate('updatedBy', 'name email staffId role')
+      .lean();
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
 
     const formatted = {
@@ -142,6 +168,10 @@ exports.getBook = async (req, res, next) => {
       back: toFullUrl(req, book.backCover),
       frontCover: toFullUrl(req, book.frontCover),
       backCover: toFullUrl(req, book.backCover),
+      createdByName: book.createdBy?.name || '',
+      createdByEmail: book.createdBy?.email || '',
+      createdByStaffId: book.createdBy?.staffId || '',
+      isOwner: req.user?._id && book.createdBy?._id ? book.createdBy._id.toString() === req.user._id.toString() : false,
     };
 
     res.json({ success: true, ...formatted, data: formatted });
