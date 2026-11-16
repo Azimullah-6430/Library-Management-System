@@ -1096,6 +1096,9 @@
     <div id="root"></div>
     <div id="toast" aria-live="polite"></div>
     <script>
+      const $ = (s) => document.querySelector(s);
+      const $$ = (s) => document.querySelectorAll(s);
+      const go = (h) => (location.hash = h);
       const LOGO = "./assets/logo.png";
 
       // ── Smart API Base URL resolver & Multi-Endpoint Failover ──────────────────
@@ -1179,8 +1182,6 @@
           (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
         );
       const today = () => new Date().toISOString().slice(0, 10);
-      const $ = (s) => document.querySelector(s);
-      const go = (h) => (location.hash = h);
 
       // ── Real REST API Client (Node.js + Express + MongoDB backend) ─────────────
       async function api(path, opts = {}) {
@@ -1603,6 +1604,12 @@
         };
       }
 
+      // ── App Route Handlers ──────────────────────────────────────────────────────
+      const R = {};
+
+      R.login = () => authPage(0);
+      R.register = () => authPage(1);
+
       R.forgotPassword = () => `
         <div class="ctr" style="min-height:82vh;display:flex;align-items:center;justify-content:center;padding:24px 16px">
           <div class="card" style="position:relative;max-width:440px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.06);border-radius:12px;padding:32px 28px">
@@ -1767,9 +1774,6 @@
         go("#/login");
       }
 
-      // ── App Route Handlers ──────────────────────────────────────────────────────
-      const R = {};
-
       R[""] = async () => {
         const hr = new Date().getHours();
         const gr =
@@ -1874,9 +1878,6 @@
   `,
         );
       };
-
-      R.login = () => authPage(0);
-      R.register = () => authPage(1);
 
       R.dashboard = async () => {
         let summary = {

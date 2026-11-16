@@ -40,3 +40,4 @@
     TIMEOUT_MS: 10000,
   };
 })(typeof window !== 'undefined' ? window : this);
+
