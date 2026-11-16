@@ -1,22 +1,27 @@
 'use strict';
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, 'Full name is required'],
       trim: true,
       maxlength: [100, 'Name cannot exceed 100 characters'],
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, 'Institutional email is required'],
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'],
+      match: [
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        'Please enter a valid institutional email address',
+      ],
+      index: true,
     },
     password: {
       type: String,
@@ -37,7 +42,10 @@ const userSchema = new mongoose.Schema(
     staffId: {
       type: String,
       trim: true,
+      unique: true,
+      sparse: true,
       maxlength: [50, 'Staff ID cannot exceed 50 characters'],
+      index: true,
     },
     department: {
       type: String,
@@ -51,6 +59,14 @@ const userSchema = new mongoose.Schema(
     },
     lastLogin: {
       type: Date,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
     },
   },
   {
@@ -70,6 +86,23 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.matchPassword = async function (enteredPassword) {
   if (!this.password) return false;
   return bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate crypto-secure password reset token
+userSchema.methods.generatePasswordResetToken = function () {
+  // Generate random token
+  const rawToken = crypto.randomBytes(32).toString('hex');
+
+  // Hash token and set to resetPasswordToken field (single-use)
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(rawToken)
+    .digest('hex');
+
+  // Set expiration: 1 hour from now
+  this.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+  return rawToken;
 };
 
 // Safe public user projection

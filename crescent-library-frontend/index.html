@@ -13,6 +13,7 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="config.js"></script>
     <style>
       :root {
         --navy: #102744;
@@ -1099,18 +1100,17 @@
 
       // ── Smart API Base URL resolver & Multi-Endpoint Failover ──────────────────
       function getApiCandidates() {
+        if (window.CLMS_CONFIG && Array.isArray(window.CLMS_CONFIG.API_CANDIDATES) && window.CLMS_CONFIG.API_CANDIDATES.length) {
+          return window.CLMS_CONFIG.API_CANDIDATES;
+        }
         const list = [];
         if (window.CLMS_API) list.push(window.CLMS_API.replace(/\/$/, ""));
         if (window.location.protocol.startsWith("http")) {
-          if (window.location.port === "5000") {
-            list.push(`${window.location.origin}/api/v1`);
-          }
-          const host = window.location.hostname;
-          if (host && host !== "localhost" && host !== "127.0.0.1") {
-            list.push(`http://${host}:5000/api/v1`);
+          list.push(`${window.location.origin}/api/v1`);
+          if (window.location.hostname && window.location.port !== "5000") {
+            list.push(`http://${window.location.hostname}:5000/api/v1`);
           }
         }
-        // Prioritize 127.0.0.1 (IPv4 loopback) and localhost (IPv6/dual-stack) on port 5000
         list.push("http://127.0.0.1:5000/api/v1");
         list.push("http://localhost:5000/api/v1");
         return [...new Set(list)];
@@ -1120,7 +1120,7 @@
         return getApiCandidates()[0];
       }
       let API_BASE = getApiBase();
-      let backendStatus = "checking"; // "online" | "offline" | "checking"
+      let backendStatus = "checking"; // "online" | "degraded" | "offline" | "checking"
 
       async function checkBackendHealth(silent = false) {
         const candidates = getApiCandidates();
@@ -1131,18 +1131,29 @@
           const healthUrl = `${rootUrl}/health`;
           try {
             const c = new AbortController();
-            const tid = setTimeout(() => c.abort(), 2000);
+            const tid = setTimeout(() => c.abort(), 2500);
             const res = await fetch(healthUrl, { signal: c.signal });
             clearTimeout(tid);
-            if (res.ok) {
+            if (res.ok || res.status === 503) {
+              const hData = await res.json().catch(() => ({}));
               API_BASE = candidate;
-              backendStatus = "online";
-              if (badge) {
-                badge.className = "bdg Available";
-                badge.textContent = "Online";
+              if (res.ok && hData.database === "connected") {
+                backendStatus = "online";
+                if (badge) {
+                  badge.className = "bdg Available";
+                  badge.textContent = "Online";
+                }
+                if (!silent) toast("Server connected and operational.");
+                return true;
+              } else {
+                backendStatus = "degraded";
+                if (badge) {
+                  badge.className = "bdg Warning";
+                  badge.textContent = "DB Initializing";
+                }
+                if (!silent) toast("Backend reached; database initializing.", 1);
+                return true;
               }
-              if (!silent) toast("Server connected and operational.");
-              return true;
             }
           } catch (_) {}
         }
@@ -1434,6 +1445,7 @@
               ${fl("email", "Institutional Email *", "email", "", "")}
               ${reg ? fl("staffId", "Staff / Faculty ID", "text", "", "") : ""}
               ${pwf("pw", "Password *")}
+              ${!reg ? `<div style="display:flex;justify-content:flex-end;margin:-4px 0 14px"><a href="#/forgot-password" style="font-size:12.5px;color:var(--navy);font-weight:600;text-decoration:none">Forgot Password?</a></div>` : ""}
               ${reg ? `<small style="color:var(--mu);display:block;margin:-4px 0 8px">Minimum 8 characters.</small>${pwf("pw2", "Confirm Password *")}` : ""}
               <button class="btn p" style="width:100%;margin-top:18px;padding:12px;font-size:14.5px;font-weight:600" id="sb">${reg ? "Register Account" : "Sign In"}</button>
             </form>
@@ -1448,6 +1460,7 @@
       }
 
       function bindAuth(reg) {
+        let isSubmitting = false;
 
         // Clear error text on user input
         ["name", "email", "staffId", "pw", "pw2"].forEach((id) => {
@@ -1462,12 +1475,14 @@
 
         $("#af").onsubmit = async (e) => {
           e.preventDefault();
+          if (isSubmitting) return;
+
           const v = (id) => ($("#" + id)?.value || "").trim();
           const er = {};
 
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!v("email")) {
-            er.email = "Enter your email address.";
+            er.email = "Enter your institutional email address.";
           } else if (!emailRegex.test(v("email"))) {
             er.email = "Please enter a valid email address.";
           }
@@ -1491,6 +1506,7 @@
           });
           if (Object.keys(er).length) return;
 
+          isSubmitting = true;
           const sb = $("#sb");
           sb.disabled = true;
           sb.innerHTML = `<span class="spinner"></span>Please wait…`;
@@ -1504,6 +1520,7 @@
                   name: v("name"),
                   email: v("email"),
                   password: v("pw"),
+                  confirmPassword: v("pw2"),
                   staffId: v("staffId") || undefined,
                   department: "Central Library",
                 },
@@ -1533,6 +1550,7 @@
             );
             setTimeout(() => go("#/"), 400);
           } catch (err) {
+            isSubmitting = false;
             sb.disabled = false;
             sb.textContent = reg ? "Register Account" : "Sign In";
 
@@ -1544,22 +1562,35 @@
               return;
             }
 
+            if (err.status === 503) {
+              toast(
+                "The library database is temporarily initializing. Please try again in a few moments.",
+                1,
+              );
+              return;
+            }
+
             // Handle duplicate registration gracefully
-            if (
-              reg &&
-              (err.status === 409 ||
-                (err.message && err.message.toLowerCase().includes("already exists")))
-            ) {
-              if ($("#e_email")) {
-                $("#e_email").innerHTML = `An account with this email already exists. <a href="#/login" style="color:var(--navy);font-weight:700;text-decoration:underline">Sign in here →</a>`;
+            if (reg && err.status === 409) {
+              const msg = err.message || "";
+              if (msg.toLowerCase().includes("staff")) {
+                if ($("#e_staffId")) $("#e_staffId").textContent = msg;
+              } else {
+                if ($("#e_email")) {
+                  $("#e_email").innerHTML = `An account with this email already exists. <a href="#/login" style="color:var(--navy);font-weight:700;text-decoration:underline">Sign in here →</a>`;
+                }
               }
-              toast("This email is already registered. Please sign in instead.", 1);
+              toast(msg || "Account with these details already exists. Please sign in instead.", 1);
               return;
             }
 
             if (err.status === 401 || err.status === 400) {
-              if (!reg && $("#e_pw")) {
-                $("#e_pw").textContent = err.message || "Invalid email or password.";
+              if (!reg) {
+                if ($("#e_pw")) $("#e_pw").textContent = err.message || "Invalid email or password.";
+                if ($("#pw")) {
+                  $("#pw").value = "";
+                  $("#pw").focus();
+                }
               }
             }
 
@@ -1572,13 +1603,166 @@
         };
       }
 
-      function doLogout() {
+      R.forgotPassword = () => `
+        <div class="ctr" style="min-height:82vh;display:flex;align-items:center;justify-content:center;padding:24px 16px">
+          <div class="card" style="position:relative;max-width:440px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.06);border-radius:12px;padding:32px 28px">
+            <div style="text-align:center;margin-bottom:20px">
+              <img src="${LOGO}" width="76" height="76" alt="Crescent Institute Logo" style="border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.1)">
+              <div style="font-weight:700;margin-top:12px;line-height:1.35;font-size:15px;color:var(--tx)">B.S. Abdur Rahman Crescent Institute of Science and Technology</div>
+              <div style="color:var(--mu);font-size:13px;margin-top:3px">Central Library Management System</div>
+            </div>
+            <h1 style="text-align:center;font-size:22px;margin:0 0 10px;font-weight:700">Reset Password</h1>
+            <p style="text-align:center;color:var(--mu);font-size:13.5px;margin:0 0 20px">Enter your registered institutional email to generate a secure password reset link.</p>
+            <form id="fp_form" novalidate>
+              <div class="fld">
+                <label for="fp_email">Institutional Email *</label>
+                <input id="fp_email" type="email" placeholder="e.g. librarian@crescent.education">
+                <div class="err" id="e_fp_email"></div>
+              </div>
+              <button class="btn p" style="width:100%;margin-top:16px;padding:12px;font-size:14.5px;font-weight:600" id="fp_sb">Send Reset Link</button>
+            </form>
+            <div id="fp_result" style="display:none;margin-top:16px;padding:12px;border-radius:8px;background:rgba(27,122,75,0.08);border:1px solid var(--ok);font-size:13px;color:var(--tx)"></div>
+            <div style="text-align:center;margin-top:20px;font-size:13px">
+              <a href="#/login" style="color:var(--navy);font-weight:600">← Back to Sign In</a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      function bindForgotPassword() {
+        const f = $("#fp_form");
+        if (!f) return;
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          const email = ($("#fp_email")?.value || "").trim();
+          const errEl = $("#e_fp_email");
+          if (errEl) errEl.textContent = "";
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            if (errEl) errEl.textContent = "Please enter a valid institutional email.";
+            return;
+          }
+          const sb = $("#fp_sb");
+          sb.disabled = true;
+          sb.innerHTML = `<span class="spinner"></span>Processing…`;
+          try {
+            const res = await api("/auth/forgot-password", {
+              method: "POST",
+              body: { email },
+            });
+            sb.disabled = false;
+            sb.textContent = "Send Reset Link";
+            const resBox = $("#fp_result");
+            if (resBox) {
+              resBox.style.display = "block";
+              resBox.innerHTML = `
+                <b>✓ ${esc(res.message || "Reset link generated.")}</b>
+                ${res.resetToken ? `<div style="margin-top:8px"><p style="margin:4px 0">Direct single-use recovery link:</p><a href="#/reset-password/${res.resetToken}" class="btn p sm" style="margin-top:6px;display:inline-block">Click here to set new password →</a></div>` : ''}
+              `;
+            }
+            toast("Password reset instructions prepared.");
+          } catch (err) {
+            sb.disabled = false;
+            sb.textContent = "Send Reset Link";
+            if (errEl) errEl.textContent = err.message || "Request failed.";
+            toast(err.message || "Unable to process password reset.", 1);
+          }
+        };
+      }
+
+      R.resetPassword = (token) => `
+        <div class="ctr" style="min-height:82vh;display:flex;align-items:center;justify-content:center;padding:24px 16px">
+          <div class="card" style="position:relative;max-width:440px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.06);border-radius:12px;padding:32px 28px">
+            <div style="text-align:center;margin-bottom:20px">
+              <img src="${LOGO}" width="76" height="76" alt="Crescent Institute Logo" style="border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,0.1)">
+              <div style="font-weight:700;margin-top:12px;line-height:1.35;font-size:15px;color:var(--tx)">B.S. Abdur Rahman Crescent Institute of Science and Technology</div>
+              <div style="color:var(--mu);font-size:13px;margin-top:3px">Central Library Management System</div>
+            </div>
+            <h1 style="text-align:center;font-size:22px;margin:0 0 10px;font-weight:700">Set New Password</h1>
+            <form id="rp_form" novalidate>
+              <div class="fld">
+                <label for="rp_pw">New Password (min 8 characters) *</label>
+                <div class="pw-box">
+                  <input id="rp_pw" type="password" autocomplete="new-password">
+                  <button type="button" class="pw-toggle" aria-label="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button>
+                </div>
+                <div class="err" id="e_rp_pw"></div>
+              </div>
+              <div class="fld">
+                <label for="rp_pw2">Confirm New Password *</label>
+                <div class="pw-box">
+                  <input id="rp_pw2" type="password" autocomplete="new-password">
+                  <button type="button" class="pw-toggle" aria-label="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button>
+                </div>
+                <div class="err" id="e_rp_pw2"></div>
+              </div>
+              <button class="btn p" style="width:100%;margin-top:16px;padding:12px;font-size:14.5px;font-weight:600" id="rp_sb">Update Password</button>
+            </form>
+            <div style="text-align:center;margin-top:20px;font-size:13px">
+              <a href="#/login" style="color:var(--navy);font-weight:600">← Back to Sign In</a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      function bindResetPassword(token) {
+        const f = $("#rp_form");
+        if (!f) return;
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          const pw = ($("#rp_pw")?.value || "").trim();
+          const pw2 = ($("#rp_pw2")?.value || "").trim();
+          const errPw = $("#e_rp_pw");
+          const errPw2 = $("#e_rp_pw2");
+          if (errPw) errPw.textContent = "";
+          if (errPw2) errPw2.textContent = "";
+
+          if (!pw || pw.length < 8) {
+            if (errPw) errPw.textContent = "Password must be at least 8 characters.";
+            return;
+          }
+          if (pw !== pw2) {
+            if (errPw2) errPw2.textContent = "Passwords do not match.";
+            return;
+          }
+
+          const sb = $("#rp_sb");
+          sb.disabled = true;
+          sb.innerHTML = `<span class="spinner"></span>Saving…`;
+
+          try {
+            const res = await api("/auth/reset-password", {
+              method: "POST",
+              body: { token, password: pw, confirmPassword: pw2 },
+            });
+            if (res.token) {
+              localStorage.setItem("clms_token", res.token);
+              if (res.user) {
+                currentUser = res.user;
+                localStorage.setItem("clms_user", JSON.stringify(res.user));
+                auth = true;
+              }
+            }
+            toast("Password updated successfully. Welcome back!");
+            setTimeout(() => go("#/"), 400);
+          } catch (err) {
+            sb.disabled = false;
+            sb.textContent = "Update Password";
+            if (errPw) errPw.textContent = err.message || "Failed to update password.";
+            toast(err.message || "Failed to update password.", 1);
+          }
+        };
+      }
+
+      async function doLogout() {
+        try {
+          await api("/auth/logout", { method: "POST" }).catch(() => {});
+        } catch (_) {}
         localStorage.clear();
         sessionStorage.clear();
         auth = false;
         currentUser = null;
         S = { books: [] };
-        F = { q: "", cat: "", status: "", shelf: "", sort: "title", dir: "1", pg: 1, ps: 15 };
+        F = { q: "", cat: "", status: "", shelf: "", my_books: "", sort: "title", dir: "1", pg: 1, ps: 15 };
         toast("Signed out successfully.");
         go("#/login");
       }
@@ -7126,7 +7310,7 @@
         }
 
         if (!h && !auth) return go("#/login");
-        if (auth && (p[0] === "login" || p[0] === "register")) return go("#/");
+        if (auth && (p[0] === "login" || p[0] === "register" || p[0] === "forgot-password" || p[0] === "reset-password")) return go("#/");
         if (PROT.includes(p[0]) && !auth) {
           toast("Please sign in to access the library system.", 1);
           return go("#/login");
@@ -7147,6 +7331,12 @@
           } else if (p[0] === "register") {
             html = R.register();
             after = () => bindAuth(1);
+          } else if (p[0] === "forgot-password") {
+            html = R.forgotPassword();
+            after = () => bindForgotPassword();
+          } else if (p[0] === "reset-password") {
+            html = R.resetPassword(p[1] || "");
+            after = () => bindResetPassword(p[1] || "");
           } else if (p[0] === "books" && p[1] === "add") {
             html = await R["books/add"]();
             after = () => bindForm();

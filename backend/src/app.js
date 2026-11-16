@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
 const passport = require('./config/passport');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -64,15 +65,25 @@ app.use(passport.initialize());
 const uploadDir = path.join(__dirname, '..', process.env.UPLOAD_DIR || 'uploads');
 app.use('/uploads', express.static(uploadDir));
 
-// ── Health Check ────────────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
-  res.json({
-    status: 'online',
+// ── Universal Health Check Handler ──────────────────────────────────────────
+const healthHandler = (_req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  const status = isDbConnected ? 'online' : 'degraded';
+  const statusCode = isDbConnected ? 200 : 503;
+
+  res.status(statusCode).json({
+    status,
+    database: isDbConnected ? 'connected' : 'disconnected',
+    api: 'available',
     service: 'Crescent Library Management System API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
+app.get('/api/v1/health', healthHandler);
 
 // ── API Routes ──────────────────────────────────────────────────────────────
 const API_PREFIX = '/api/v1';
@@ -83,12 +94,20 @@ app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/import-export`, importExportRoutes);
 app.use(`${API_PREFIX}/smartshelf`, smartshelfRoutes);
 
+// Also alias /api/auth to /api/v1/auth for standard flexibility
+app.use('/api/auth', authRoutes);
+
 // ── Frontend Static Files & SPA Fallback ────────────────────────────────────
 const frontendDir = path.resolve(__dirname, '../../crescent-library-frontend');
 app.use(express.static(frontendDir));
 
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path === '/health') {
+  if (
+    req.path.startsWith('/api') ||
+    req.path.startsWith('/uploads') ||
+    req.path === '/health' ||
+    req.path === '/api/health'
+  ) {
     return next();
   }
   res.sendFile(path.join(frontendDir, 'index.html'));
