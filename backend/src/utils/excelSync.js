@@ -76,14 +76,14 @@ const syncInventoryToExcel = async () => {
         ? rows
         : [
             {
-              'S.No': 1,
+              'S.No': '',
               'Accession No': '',
-              'Book Title': 'Inventory initialized. Add your first book.',
+              'Book Title': '',
               'Author(s)': '',
               'Category': '',
-              'Price (INR)': 0,
-              'Copies': 0,
-              'Status': 'Available',
+              'Price (INR)': '',
+              'Catalog Copies': '',
+              'Status': '',
             },
           ]
     );

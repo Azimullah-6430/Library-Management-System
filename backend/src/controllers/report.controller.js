@@ -5,12 +5,21 @@ const Category = require('../models/Category');
 /**
  * GET /api/v1/reports/summary
  */
-exports.getSummary = async (_req, res, next) => {
+exports.getSummary = async (req, res, next) => {
   try {
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = req.query.scope === 'all' || req.query.all === 'true';
+    const matchFilter = {};
+
+    if ((!isAdmin && !isExplicitAll) || req.query.my_reports === 'true') {
+      if (req.user?._id) matchFilter.createdBy = req.user._id;
+    }
+
     const [totalBooks, totalCategories, agg] = await Promise.all([
-      Book.countDocuments(),
+      Book.countDocuments(matchFilter),
       Category.countDocuments(),
       Book.aggregate([
+        { $match: matchFilter },
         {
           $group: {
             _id: null,
@@ -61,12 +70,21 @@ exports.getSummary = async (_req, res, next) => {
 /**
  * GET /api/v1/reports/full
  */
-exports.getFullReport = async (_req, res, next) => {
+exports.getFullReport = async (req, res, next) => {
   try {
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = req.query.scope === 'all' || req.query.all === 'true';
+    const matchFilter = {};
+
+    if ((!isAdmin && !isExplicitAll) || req.query.my_reports === 'true') {
+      if (req.user?._id) matchFilter.createdBy = req.user._id;
+    }
+
     const [totalBooks, totalCategories, aggSummary, byCat, byStat, byYr, bySh] = await Promise.all([
-      Book.countDocuments(),
+      Book.countDocuments(matchFilter),
       Category.countDocuments(),
       Book.aggregate([
+        { $match: matchFilter },
         {
           $group: {
             _id: null,
@@ -76,23 +94,26 @@ exports.getFullReport = async (_req, res, next) => {
         },
       ]),
       Book.aggregate([
+        { $match: matchFilter },
         { $group: { _id: { $ifNull: ['$cat', 'Uncategorized'] }, count: { $sum: 1 }, copies: { $sum: '$copies' } } },
         { $sort: { count: -1 } },
         { $project: { _id: 0, category: '$_id', count: 1, copies: 1 } },
       ]),
       Book.aggregate([
+        { $match: matchFilter },
         { $group: { _id: { $ifNull: ['$status', 'Available'] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $project: { _id: 0, status: '$_id', count: 1 } },
       ]),
       Book.aggregate([
-        { $match: { year: { $exists: true, $ne: null, $gt: 0 } } },
+        { $match: { ...matchFilter, year: { $exists: true, $ne: null, $gt: 0 } } },
         { $group: { _id: '$year', count: { $sum: 1 } } },
         { $sort: { _id: -1 } },
         { $limit: 15 },
         { $project: { _id: 0, year: '$_id', count: 1 } },
       ]),
       Book.aggregate([
+        { $match: matchFilter },
         {
           $group: {
             _id: {

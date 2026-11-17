@@ -1289,6 +1289,8 @@
         q: "",
         cat: "",
         st: "",
+        scope: "my",
+        my_books: "",
         sort: "createdAt",
         dir: -1,
         pg: 1,
@@ -1769,7 +1771,7 @@
         auth = false;
         currentUser = null;
         S = { books: [] };
-        F = { q: "", cat: "", status: "", shelf: "", my_books: "", sort: "title", dir: "1", pg: 1, ps: 15 };
+        F = { q: "", cat: "", status: "", shelf: "", scope: "my", my_books: "", sort: "title", dir: "1", pg: 1, ps: 15 };
         toast("Signed out successfully.");
         go("#/login");
       }
@@ -2151,11 +2153,11 @@
         <select style="width:auto" aria-label="Page size" onchange="F.ps=+this.value;F.pg=1;tbl()">
           ${[8, 15, 30, 50].map((n) => `<option ${F.ps === n ? "selected" : ""}>${n}</option>`).join("")}
         </select>
-        <select style="width:auto" aria-label="Ownership" onchange="F.my_books=this.value;F.pg=1;tbl()">
-          <option value="">All Registered Books</option>
-          <option value="true" ${F.my_books === "true" ? "selected" : ""}>My Registered Books Only</option>
+        <select style="width:auto" aria-label="Ownership" onchange="F.scope=this.value;F.my_books=this.value==='my'?'true':'';F.pg=1;tbl()">
+          <option value="my" ${F.scope === "my" ? "selected" : ""}>My Registered Books</option>
+          <option value="all" ${F.scope === "all" ? "selected" : ""}>All Institutional Books</option>
         </select>
-        <button class="btn" onclick="F.q=F.cat=F.st=F.my_books='';F.pg=1;tbl()">Clear Filters</button>
+        <button class="btn" onclick="F.q=F.cat=F.st='';F.scope=(currentUser&&currentUser.role==='admin'?'all':'my');F.my_books=F.scope==='my'?'true':'';F.pg=1;tbl()">Clear Filters</button>
       </div>
       <div id="tb"><div style="text-align:center;padding:40px;color:var(--mu)"><span class="spinner" style="border-top-color:var(--navy)"></span>Loading catalog…</div></div>
     </div>
@@ -2211,6 +2213,7 @@
           if (F.cat) params.set("cat", F.cat);
           if (F.st) params.set("status", F.st);
           if (F.my_books) params.set("my_books", F.my_books);
+          if (F.scope) params.set("scope", F.scope);
 
           const res = await api(`/books?${params.toString()}`);
           const items = res.items || res.data || [];
@@ -2264,9 +2267,9 @@
                 <td><span class="bdg ${b.status || "Available"}">${esc(b.status || "Available")}</span></td>
                 <td class="row">
                   <a class="btn" href="#/books/${b.id || b._id}">View</a>
-                  <a class="btn" href="#/books/${b.id || b._id}/edit">Edit</a>
+                  ${currentUser && (currentUser.role === 'admin' || b.isOwner) ? `<a class="btn" href="#/books/${b.id || b._id}/edit">Edit</a>` : ''}
                   <button class="btn" title="QR Code Labels" onclick="openQrLabelModal('${b.id || b._id}','${esc(b.title)}')">🏷️ QR</button>
-                  <button class="btn d" onclick="delBook('${b.id || b._id}','${esc(b.title)}')">Delete</button>
+                  ${currentUser && (currentUser.role === 'admin' || b.isOwner) ? `<button class="btn d" onclick="delBook('${b.id || b._id}','${esc(b.title)}')">Delete</button>` : ''}
                 </td>
               </tr>
             `,

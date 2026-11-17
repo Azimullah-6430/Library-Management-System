@@ -89,9 +89,16 @@ const parseCsvBuffer = (buffer) => {
 /**
  * GET /api/v1/import-export/export
  */
-exports.exportCsv = async (_req, res, next) => {
+exports.exportCsv = async (req, res, next) => {
   try {
-    const books = await Book.find().sort({ acc: 1 }).lean();
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = req.query.scope === 'all';
+    const filter = {};
+    if (!isAdmin && !isExplicitAll && req.user?._id) {
+      filter.createdBy = req.user._id;
+    }
+
+    const books = await Book.find(filter).sort({ acc: 1 }).lean();
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="crescent_library_inventory.csv"');
@@ -160,33 +167,8 @@ exports.exportExcel = async (_req, res, next) => {
 exports.getTemplate = (_req, res) => {
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', 'attachment; filename="clms_book_import_template.csv"');
-
-  const sample = [
-    'Introduction to Algorithms',
-    'ACC-0001',
-    '9780262046305',
-    'Cormen, Leiserson, Rivest, Stein',
-    '',
-    'MIT Press',
-    '3rd Edition',
-    '2022',
-    'Computer Science',
-    'English',
-    'Hardcover',
-    '1250',
-    '3',
-    'A-1',
-    'Row 1',
-    '2024-01-15',
-    'Pearson India',
-    'INV-2024-001',
-    'New',
-    'Available',
-    'Standard curriculum text',
-  ];
-
+  // Pure schema header columns (ZERO mock or fake sample data)
   res.write(CSV_COLUMNS.join(',') + '\n');
-  res.write(sample.map(escapeCsv).join(',') + '\n');
   res.end();
 };
 

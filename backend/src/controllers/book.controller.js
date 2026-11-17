@@ -33,6 +33,9 @@ exports.getBooks = async (req, res, next) => {
       status = '',
       shelf = '',
       my_books = '',
+      scope = '',
+      view = '',
+      all_users = '',
       createdBy = '',
       sort = 'createdAt',
       dir = '-1',
@@ -45,11 +48,17 @@ exports.getBooks = async (req, res, next) => {
 
     const filter = {};
 
-    // User-specific data filtering: support showing books created by specific librarian
+    // User-specific data filtering & multi-tenant isolation
+    const isAdmin = req.user?.role === 'admin';
+    const wantsAll = scope === 'all' || view === 'all' || all_users === 'true' || (isAdmin && my_books !== 'true' && !createdBy);
+
     if (my_books === 'true' && req.user?._id) {
       filter.createdBy = req.user._id;
     } else if (createdBy) {
       filter.createdBy = createdBy;
+    } else if (!wantsAll && req.user?._id) {
+      // Librarians strictly see their respective registered books by default
+      filter.createdBy = req.user._id;
     }
 
     // Search query
@@ -257,6 +266,14 @@ exports.updateBook = async (req, res, next) => {
     const existing = await Book.findById(req.params.id);
     if (!existing) return res.status(404).json({ success: false, message: 'Book not found' });
 
+    // Enforce data isolation: non-admin users cannot mutate other users' books
+    if (req.user?.role !== 'admin' && existing.createdBy && req.user?._id && existing.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: You are only authorized to modify books registered by your account.',
+      });
+    }
+
     const covers = extractCoverPaths(req);
     const body = { ...req.body, ...covers };
 
@@ -318,6 +335,14 @@ exports.uploadBookCovers = async (req, res, next) => {
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
 
+    // Enforce data isolation: non-admin users cannot upload covers for other users' books
+    if (req.user?.role !== 'admin' && book.createdBy && req.user?._id && book.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: You are only authorized to upload covers for books registered by your account.',
+      });
+    }
+
     const covers = extractCoverPaths(req);
     if (covers.frontCover) {
       if (book.frontCover) deleteFile(book.frontCover);
@@ -353,6 +378,14 @@ exports.deleteBook = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ success: false, message: 'Book not found' });
+
+    // Enforce data isolation: non-admin users cannot delete other users' books
+    if (req.user?.role !== 'admin' && book.createdBy && req.user?._id && book.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: You are only authorized to delete books registered by your account.',
+      });
+    }
 
     // Protect historical inventory: Soft-withdraw copies instead of destroying historical records
     const BookCopy = require('../models/BookCopy');

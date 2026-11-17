@@ -836,6 +836,8 @@ exports.getAllCopies = async (req, res, next) => {
       status,
       condition,
       isMisplaced,
+      scope,
+      my_copies,
       page = 1,
       limit = 20,
     } = req.query;
@@ -862,6 +864,24 @@ exports.getAllCopies = async (req, res, next) => {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
     const skip = (pageNum - 1) * limitNum;
+
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = scope === 'all';
+    const wantsMy = my_copies === 'true' || (!isAdmin && !isExplicitAll);
+
+    if (wantsMy && req.user?._id) {
+      const userBookIds = await Book.find({ createdBy: req.user._id }).distinct('_id');
+      const userScoped = [
+        { bookId: { $in: userBookIds } },
+        { createdBy: req.user._id },
+      ];
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: userScoped }];
+        delete filter.$or;
+      } else {
+        filter.$or = userScoped;
+      }
+    }
 
     const [total, copies] = await Promise.all([
       BookCopy.countDocuments(filter),
@@ -1432,6 +1452,18 @@ exports.getAllMovements = async (req, res, next) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
     const skip = (pageNum - 1) * limitNum;
 
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = req.query.scope === 'all';
+
+    if (my_movements === 'true' && req.user?._id) {
+      filter.performedBy = req.user._id;
+    } else if (performedBy) {
+      filter.performedBy = performedBy;
+    } else if (!isAdmin && !isExplicitAll && req.user?._id) {
+      // Non-admin librarians see their own performed movements by default
+      filter.performedBy = req.user._id;
+    }
+
     const [total, movements] = await Promise.all([
       BookMovement.countDocuments(filter),
       BookMovement.find(filter)
@@ -1522,6 +1554,24 @@ exports.getLocationInventoryCounts = async (req, res, next) => {
  */
 exports.getGlobalInventoryCounts = async (req, res, next) => {
   try {
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = req.query.scope === 'all' || req.query.all === 'true';
+    const isUserScoped = !isAdmin && !isExplicitAll && req.user?._id;
+
+    const copyFilter = { isDeleted: false };
+    const movementFilter = {};
+    const auditFilter = { status: 'IN_PROGRESS' };
+
+    if (isUserScoped) {
+      const userBookIds = await Book.find({ createdBy: req.user._id }).distinct('_id');
+      copyFilter.$or = [
+        { bookId: { $in: userBookIds } },
+        { createdBy: req.user._id },
+      ];
+      movementFilter.performedBy = req.user._id;
+      auditFilter.startedBy = req.user._id;
+    }
+
     const [
       totalPhysicalCopies,
       activeLocations,
@@ -1533,18 +1583,18 @@ exports.getGlobalInventoryCounts = async (req, res, next) => {
       statusCounts,
       recentMovements,
     ] = await Promise.all([
-      BookCopy.countDocuments({ isDeleted: false }),
+      BookCopy.countDocuments(copyFilter),
       LibraryLocation.countDocuments({ isActive: true }),
-      BookMovement.countDocuments(),
-      BookCopy.countDocuments({ isDeleted: false, locationId: { $ne: null }, isMisplaced: false }),
-      BookCopy.countDocuments({ isDeleted: false, $or: [{ locationId: null }, { locationId: { $exists: false } }] }),
-      BookCopy.countDocuments({ isDeleted: false, isMisplaced: true }),
-      InventoryAudit.countDocuments({ status: 'IN_PROGRESS' }),
+      BookMovement.countDocuments(movementFilter),
+      BookCopy.countDocuments({ ...copyFilter, locationId: { $ne: null }, isMisplaced: false }),
+      BookCopy.countDocuments({ ...copyFilter, $or: [{ locationId: null }, { locationId: { $exists: false } }] }),
+      BookCopy.countDocuments({ ...copyFilter, isMisplaced: true }),
+      InventoryAudit.countDocuments(auditFilter),
       BookCopy.aggregate([
-        { $match: { isDeleted: false } },
+        { $match: copyFilter },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
-      BookMovement.find()
+      BookMovement.find(movementFilter)
         .populate('previousLocationId', 'locationCode')
         .populate('newLocationId', 'locationCode')
         .populate('performedBy', 'name')
@@ -1558,7 +1608,7 @@ exports.getGlobalInventoryCounts = async (req, res, next) => {
 
     // Distribution across sections
     const sectionDistribution = await BookCopy.aggregate([
-      { $match: { isDeleted: false, locationId: { $ne: null } } },
+      { $match: { ...copyFilter, locationId: { $ne: null } } },
       {
         $lookup: {
           from: 'librarylocations',
@@ -2434,12 +2484,19 @@ exports.completeAudit = async (req, res, next) => {
  */
 exports.getAudits = async (req, res, next) => {
   try {
-    const { my_audits, startedBy } = req.query;
+    const { my_audits, startedBy, scope } = req.query;
     const filter = {};
+
+    const isAdmin = req.user?.role === 'admin';
+    const isExplicitAll = scope === 'all';
+
     if (my_audits === 'true' && req.user?._id) {
       filter.startedBy = req.user._id;
     } else if (startedBy) {
       filter.startedBy = startedBy;
+    } else if (!isAdmin && !isExplicitAll && req.user?._id) {
+      // Non-admin librarians see their own initiated audits by default
+      filter.startedBy = req.user._id;
     }
 
     const audits = await InventoryAudit.find(filter)
