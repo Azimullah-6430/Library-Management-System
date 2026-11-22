@@ -14,19 +14,38 @@
     if (userConfig.API_URL) list.push(userConfig.API_URL.replace(/\/+$/, ''));
     if (global.CLMS_API) list.push(global.CLMS_API.replace(/\/+$/, ''));
 
-    // 2. Same-origin resolution: If page is loaded over HTTP/HTTPS, origin/api/v1 is primary
-    if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-      const origin = window.location.origin;
-      list.push(`${origin}/api/v1`);
-      // Also include port 5000 on current hostname if accessing via non-5000 dev server (e.g. 5500 or 3000)
-      if (window.location.hostname && window.location.port !== '5000') {
-        list.push(`http://${window.location.hostname}:5000/api/v1`);
+    // 2. Intelligent resolution based on how the page is loaded
+    if (typeof window !== 'undefined' && window.location) {
+      const port = window.location.port;
+      const hostname = window.location.hostname || 'localhost';
+
+      // If page is served directly by the Express backend on port 5000, use same-origin first
+      if (port === '5000') {
+        list.push(`${window.location.origin}/api/v1`);
+        list.push(`${window.location.origin}/api`);
+      }
+
+      // If page is opened on local machine (e.g. Live Server on 5500, Vite on 5173, etc.)
+      // the actual Express API is on port 5000 of the same host
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '') {
+        list.push('http://localhost:5000/api/v1');
+        list.push('http://127.0.0.1:5000/api/v1');
+        list.push('http://localhost:5000/api');
+        list.push('http://127.0.0.1:5000/api');
+      } else {
+        // LAN or remote hostname: backend is on port 5000
+        list.push(`http://${hostname}:5000/api/v1`);
+        if (port === '5000' || port === '' || port === '80' || port === '443') {
+          list.push(`${window.location.origin}/api/v1`);
+        }
       }
     }
 
-    // 3. Localhost loopback candidates for development and file:/// preview
-    list.push('http://127.0.0.1:5000/api/v1');
+    // Always include standard local loopback fallbacks
     list.push('http://localhost:5000/api/v1');
+    list.push('http://127.0.0.1:5000/api/v1');
+    list.push('http://localhost:5000/api');
+    list.push('http://127.0.0.1:5000/api');
 
     return [...new Set(list)];
   }
@@ -40,4 +59,3 @@
     TIMEOUT_MS: 10000,
   };
 })(typeof window !== 'undefined' ? window : this);
-

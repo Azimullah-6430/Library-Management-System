@@ -85,17 +85,38 @@ app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 app.get('/api/v1/health', healthHandler);
 
-// ── API Routes ──────────────────────────────────────────────────────────────
+// ── API Routes (Universal prefix compatibility: /api/v1, /api, and root aliases) ──
 const API_PREFIX = '/api/v1';
-app.use(`${API_PREFIX}/auth`, authRoutes);
-app.use(`${API_PREFIX}/books`, bookRoutes);
-app.use(`${API_PREFIX}/categories`, categoryRoutes);
-app.use(`${API_PREFIX}/reports`, reportRoutes);
-app.use(`${API_PREFIX}/import-export`, importExportRoutes);
-app.use(`${API_PREFIX}/smartshelf`, smartshelfRoutes);
 
-// Also alias /api/auth to /api/v1/auth for standard flexibility
+// Auth routes
+app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
+// Catalog routes
+app.use(`${API_PREFIX}/books`, bookRoutes);
+app.use('/api/books', bookRoutes);
+app.use('/books', bookRoutes);
+
+// Category routes
+app.use(`${API_PREFIX}/categories`, categoryRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/categories', categoryRoutes);
+
+// Reports routes
+app.use(`${API_PREFIX}/reports`, reportRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/reports', reportRoutes);
+
+// Import/Export routes
+app.use(`${API_PREFIX}/import-export`, importExportRoutes);
+app.use('/api/import-export', importExportRoutes);
+app.use('/import-export', importExportRoutes);
+
+// SmartShelf AI routes
+app.use(`${API_PREFIX}/smartshelf`, smartshelfRoutes);
+app.use('/api/smartshelf', smartshelfRoutes);
+app.use('/smartshelf', smartshelfRoutes);
 
 // ── Frontend Static Files & SPA Fallback ────────────────────────────────────
 const frontendDir = path.resolve(__dirname, '../../crescent-library-frontend');
@@ -104,6 +125,12 @@ app.use(express.static(frontendDir));
 app.get('*', (req, res, next) => {
   if (
     req.path.startsWith('/api') ||
+    req.path.startsWith('/auth') ||
+    req.path.startsWith('/books') ||
+    req.path.startsWith('/categories') ||
+    req.path.startsWith('/reports') ||
+    req.path.startsWith('/smartshelf') ||
+    req.path.startsWith('/import-export') ||
     req.path.startsWith('/uploads') ||
     req.path === '/health' ||
     req.path === '/api/health'

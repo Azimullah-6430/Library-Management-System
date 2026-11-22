@@ -1108,14 +1108,30 @@
         }
         const list = [];
         if (window.CLMS_API) list.push(window.CLMS_API.replace(/\/$/, ""));
-        if (window.location.protocol.startsWith("http")) {
+        const port = window.location.port;
+        const hostname = window.location.hostname || "localhost";
+
+        // If page is served directly by the backend on port 5000, prioritize same-origin
+        if (port === "5000") {
           list.push(`${window.location.origin}/api/v1`);
-          if (window.location.hostname && window.location.port !== "5000") {
-            list.push(`http://${window.location.hostname}:5000/api/v1`);
+          list.push(`${window.location.origin}/api`);
+        }
+
+        // Dedicated local Express backend port
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "") {
+          list.push("http://localhost:5000/api/v1");
+          list.push("http://127.0.0.1:5000/api/v1");
+          list.push("http://localhost:5000/api");
+          list.push("http://127.0.0.1:5000/api");
+        } else {
+          list.push(`http://${hostname}:5000/api/v1`);
+          if (port === "5000" || port === "" || port === "80" || port === "443") {
+            list.push(`${window.location.origin}/api/v1`);
           }
         }
-        list.push("http://127.0.0.1:5000/api/v1");
+
         list.push("http://localhost:5000/api/v1");
+        list.push("http://127.0.0.1:5000/api/v1");
         return [...new Set(list)];
       }
 
@@ -1205,18 +1221,28 @@
         let lastErr = null;
         let res = null;
 
-        for (const base of candidates) {
+        for (let i = 0; i < candidates.length; i++) {
+          const base = candidates[i];
           const url = buildUrl(base);
           try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 8000);
-            res = await fetch(url, {
+            const tryRes = await fetch(url, {
               ...opts,
               body: bodyPayload,
               headers,
               signal: opts.signal || controller.signal,
             });
             clearTimeout(timer);
+
+            // If a candidate returns 404 or 405 (such as a static file server like Live Server on 5500),
+            // and there are further candidates available in the list, continue failover to port 5000!
+            if ((tryRes.status === 404 || tryRes.status === 405) && i < candidates.length - 1) {
+              lastErr = new Error(`Endpoint not found on ${base}`);
+              continue;
+            }
+
+            res = tryRes;
             // Connected successfully! Lock this base URL as current API_BASE
             API_BASE = base;
             backendStatus = "online";
@@ -1568,6 +1594,14 @@
             if (err.status === 503) {
               toast(
                 "The library database is temporarily initializing. Please try again in a few moments.",
+                1,
+              );
+              return;
+            }
+
+            if (err.status === 404) {
+              toast(
+                "Cannot reach library backend on port 5000. Please start the server by double-clicking start-server.bat in the project folder.",
                 1,
               );
               return;
