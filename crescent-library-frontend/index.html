@@ -1114,11 +1114,11 @@
           Backend Base URL
         </label>
         <div style="margin-bottom:10px">
-          <input id="input-backend-url" type="url" placeholder="https://crescent-library-backend.onrender.com" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-family:monospace;background:var(--bg);color:var(--tx)">
+          <input id="input-backend-url" type="url" placeholder="https://library-management-system-bm2m.onrender.com" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-family:monospace;background:var(--bg);color:var(--tx)">
         </div>
 
         <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
-          <button type="button" class="btn s" onclick="setPresetBackend('https://crescent-library-backend.onrender.com')" style="font-size:11.5px;padding:5px 9px">Render Default</button>
+          <button type="button" class="btn s" onclick="setPresetBackend('https://library-management-system-bm2m.onrender.com')" style="font-size:11.5px;padding:5px 9px">Render Live Backend</button>
           <button type="button" class="btn s" onclick="setPresetBackend(window.location.origin)" style="font-size:11.5px;padding:5px 9px">Same-Origin (Vercel)</button>
           <button type="button" class="btn s" onclick="setPresetBackend('http://localhost:5000')" style="font-size:11.5px;padding:5px 9px">Localhost:5000</button>
         </div>
@@ -1166,9 +1166,13 @@
           } catch (_) {}
         }
 
-        // 2. User configured backend URL from localStorage
+        // 2. User configured backend URL from localStorage (with auto-heal for stale placeholders)
         try {
-          const stored = localStorage.getItem("clms_backend_url");
+          let stored = localStorage.getItem("clms_backend_url");
+          if (stored && stored.includes("crescent-library-backend.onrender.com")) {
+            stored = "https://library-management-system-bm2m.onrender.com/api/v1";
+            localStorage.setItem("clms_backend_url", stored);
+          }
           if (stored) {
             const clean = stored.replace(/\/+$/, "");
             list.push(clean.endsWith("/api/v1") ? clean : `${clean}/api/v1`);
@@ -1191,7 +1195,7 @@
         }
 
         // 5. Default Render Production URL
-        const defaultRender = (window.CLMS_CONFIG && window.CLMS_CONFIG.PRODUCTION_RENDER_URL) || "https://crescent-library-backend.onrender.com";
+        const defaultRender = (window.CLMS_CONFIG && window.CLMS_CONFIG.PRODUCTION_RENDER_URL) || "https://library-management-system-bm2m.onrender.com";
         if (defaultRender) {
           const r = defaultRender.replace(/\/+$/, "");
           list.push(r.endsWith("/api/v1") ? r : `${r}/api/v1`);
@@ -1217,7 +1221,7 @@
 
       function getApiBase() {
         const c = getApiCandidates();
-        return c.length ? c[0] : (window.location.protocol === "https:" ? "https://crescent-library-backend.onrender.com/api/v1" : "http://localhost:5000/api/v1");
+        return c.length ? c[0] : (window.location.protocol === "https:" ? "https://library-management-system-bm2m.onrender.com/api/v1" : "http://localhost:5000/api/v1");
       }
 
       let API_BASE = getApiBase();
@@ -1290,7 +1294,7 @@
         const input = document.getElementById("input-backend-url");
         if (input) {
           const stored = localStorage.getItem("clms_backend_url");
-          input.value = stored || API_BASE || "https://crescent-library-backend.onrender.com";
+          input.value = stored || API_BASE || "https://library-management-system-bm2m.onrender.com";
         }
         modal.style.display = "flex";
         testServerConnection(false);

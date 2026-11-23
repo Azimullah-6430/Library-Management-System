@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: crescent-library-backend
+    name: library-management-system-bm2m
     runtime: node
     plan: free
     region: oregon

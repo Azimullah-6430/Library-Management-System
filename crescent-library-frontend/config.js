@@ -7,8 +7,8 @@
   'use strict';
 
   // ── Render Production Backend URL ───────────────────────────────────────────
-  // If your backend is deployed on Render, paste its URL here (e.g. https://your-service.onrender.com)
-  const DEFAULT_PRODUCTION_RENDER_URL = 'https://crescent-library-backend.onrender.com';
+  // Configured with your live Render Web Service URL
+  const DEFAULT_PRODUCTION_RENDER_URL = 'https://library-management-system-bm2m.onrender.com';
 
   const userConfig = global.__CLMS_CONFIG__ || {};
 
@@ -32,23 +32,28 @@
       } catch (_) {}
     }
 
-    // 2. Stored backend URL from localStorage
+    // 2. Stored backend URL from localStorage (auto-heals stale placeholder domain)
     try {
-      const storedApi = localStorage.getItem('clms_backend_url');
+      let storedApi = localStorage.getItem('clms_backend_url');
+      if (storedApi && storedApi.includes('crescent-library-backend.onrender.com')) {
+        storedApi = 'https://library-management-system-bm2m.onrender.com/api/v1';
+        localStorage.setItem('clms_backend_url', storedApi);
+      }
       if (storedApi) {
         const clean = storedApi.replace(/\/+$/, '');
         list.push(clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`);
       }
     } catch (_) {}
 
-    // 3. User configured window.CLMS_CONFIG or window.CLMS_API
+    // 3. User configured window.CLMS_CONFIG, window.CLMS_API, or environment variables
+    const envUrl = global.CLMS_BACKEND_URL || global.VITE_API_URL || global.CLMS_API || (global.ENV && (global.ENV.CLMS_BACKEND_URL || global.ENV.VITE_API_URL));
+    if (envUrl) {
+      const e = envUrl.replace(/\/+$/, '');
+      list.push(e.endsWith('/api/v1') ? e : `${e}/api/v1`);
+    }
     if (userConfig.API_URL) {
       const u = userConfig.API_URL.replace(/\/+$/, '');
       list.push(u.endsWith('/api/v1') ? u : `${u}/api/v1`);
-    }
-    if (global.CLMS_API) {
-      const g = global.CLMS_API.replace(/\/+$/, '');
-      list.push(g.endsWith('/api/v1') ? g : `${g}/api/v1`);
     }
 
     // 4. Same-origin relative path (for Vercel rewrites or self-hosted Express)

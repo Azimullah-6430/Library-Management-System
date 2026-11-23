@@ -18,19 +18,19 @@
     },
     {
       "src": "/api/v1/(.*)",
-      "dest": "https://crescent-library-backend.onrender.com/api/v1/$1"
+      "dest": "https://library-management-system-bm2m.onrender.com/api/v1/$1"
     },
     {
       "src": "/api/(.*)",
-      "dest": "https://crescent-library-backend.onrender.com/api/$1"
+      "dest": "https://library-management-system-bm2m.onrender.com/api/$1"
     },
     {
       "src": "/health",
-      "dest": "https://crescent-library-backend.onrender.com/health"
+      "dest": "https://library-management-system-bm2m.onrender.com/health"
     },
     {
       "src": "/uploads/(.*)",
-      "dest": "https://crescent-library-backend.onrender.com/uploads/$1"
+      "dest": "https://library-management-system-bm2m.onrender.com/uploads/$1"
     },
     {
       "src": "/(.*)",
