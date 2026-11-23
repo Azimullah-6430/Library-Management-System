@@ -1229,6 +1229,7 @@
             const timer = setTimeout(() => controller.abort(), 8000);
             const tryRes = await fetch(url, {
               ...opts,
+              credentials: "include",
               body: bodyPayload,
               headers,
               signal: opts.signal || controller.signal,
@@ -1448,6 +1449,81 @@
         btn.title = isPw ? "Hide password" : "Show password";
       }
 
+      function calcPasswordStrength(pw) {
+        if (!pw) return { score: 0, text: '', color: '', width: '0%', hint: '' };
+        let score = 0;
+        if (pw.length >= 8) score++;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+        if (/[0-9]/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw)) score++;
+        if (pw.length >= 12) score++;
+
+        if (score <= 1) return { score: 1, text: 'Weak', color: '#e02424', width: '25%', hint: 'Use 8+ chars with mixed case & numbers' };
+        if (score === 2) return { score: 2, text: 'Fair', color: '#c8963e', width: '50%', hint: 'Add symbols or digits for stronger security' };
+        if (score === 3 || score === 4) return { score: 3, text: 'Good', color: '#1a56db', width: '75%', hint: 'Good password strength' };
+        return { score: 4, text: 'Strong', color: '#0e9f6e', width: '100%', hint: 'Excellent password strength' };
+      }
+
+      window.handleGoogleSignIn = async () => {
+        const clientId = window.CLMS_CONFIG?.GOOGLE_CLIENT_ID || window.GOOGLE_CLIENT_ID;
+        if (!clientId) {
+          const d = document.createElement("dialog");
+          d.style.maxWidth = "480px";
+          d.style.width = "90vw";
+          d.style.padding = "24px";
+          d.style.borderRadius = "12px";
+          d.style.border = "1px solid var(--bd)";
+          d.style.boxShadow = "0 16px 40px rgba(0,0,0,0.15)";
+          d.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--navy)">Google Authentication Setup</h3>
+            </div>
+            <p style="font-size:13px;color:var(--tx);line-height:1.5;margin:0 0 14px">
+              To activate <b>Continue with Google</b> for institutional single sign-on, configure Google Cloud OAuth 2.0 Client credentials:
+            </p>
+            <ol style="font-size:12.5px;color:var(--tx);padding-left:18px;margin:0 0 16px;line-height:1.6">
+              <li>Open Google Cloud Console: <b>APIs & Services → Credentials</b></li>
+              <li>Create an <b>OAuth 2.0 Client ID</b> (Application type: Web application).</li>
+              <li>Add Authorized JavaScript origin: <code>http://localhost:5000</code></li>
+              <li>Set in <code>backend/.env</code>: <code>GOOGLE_CLIENT_ID=your_id.apps.googleusercontent.com</code></li>
+            </ol>
+            <button class="btn p" style="width:100%" onclick="this.closest('dialog').close();this.closest('dialog').remove()">Close</button>
+          `;
+          document.body.appendChild(d);
+          d.showModal();
+          return;
+        }
+
+        if (typeof google !== "undefined" && google.accounts && google.accounts.id) {
+          google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (response) => {
+              try {
+                toast("Verifying Google account with server…");
+                const res = await api("/auth/google", {
+                  method: "POST",
+                  body: { credential: response.credential },
+                });
+                const token = res.token || res.access_token || res.data?.token;
+                if (!token) throw new Error("Authentication token not received");
+                localStorage.setItem("clms_token", token);
+                currentUser = res.user || res.data?.user;
+                localStorage.setItem("clms_user", JSON.stringify(currentUser));
+                auth = true;
+                toast(`Signed in with Google! Welcome, ${currentUser?.name || "Librarian"}.`);
+                setTimeout(() => go("#/"), 400);
+              } catch (err) {
+                toast("Google Sign-In failed: " + (err.message || "Unauthorized"), 1);
+              }
+            },
+          });
+          google.accounts.id.prompt();
+        } else {
+          toast("Google Identity Services library is initializing. Please try again.", 1);
+        }
+      };
+
       function authPage(reg) {
         const fl = (id, l, t = "text", x = "", val = "") =>
           `<div class="fld"><label for="${id}">${l}</label>${x || `<input id="${id}" type="${t}" value="${esc(val)}">`}<div class="err" id="e_${id}"></div></div>`;
@@ -1459,6 +1535,21 @@
             `<div class="pw-box"><input id="${id}" type="password" autocomplete="${reg ? "new-password" : "current-password"}"><button type="button" class="pw-toggle" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">${EYE_OPEN}</button></div>`,
           );
 
+        const googleBtn = `
+          <button type="button" class="btn" id="googleBtn" onclick="handleGoogleSignIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1px solid #dadce0;color:#3c4043;font-weight:600;font-size:13.5px;padding:10px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.05);transition:background 0.2s;cursor:pointer">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <span>Continue with Google</span>
+          </button>
+        `;
+
+        const orDivider = `
+          <div style="display:flex;align-items:center;margin:18px 0;gap:12px;color:var(--mu);font-size:11.5px">
+            <div style="flex:1;height:1px;background:var(--bd)"></div>
+            <span>OR</span>
+            <div style="flex:1;height:1px;background:var(--bd)"></div>
+          </div>
+        `;
+
         return `<div class="ctr" style="min-height:82vh;display:flex;align-items:center;justify-content:center;padding:24px 16px">
           <div class="card" style="position:relative;max-width:440px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.06);border-radius:12px;padding:32px 28px">
             <div style="text-align:center;margin-bottom:20px">
@@ -1467,21 +1558,48 @@
               <div style="color:var(--mu);font-size:13px;margin-top:3px">Central Library Management System</div>
             </div>
 
-            <h1 style="text-align:center;font-size:22px;margin:0 0 20px;font-weight:700;letter-spacing:-0.02em">${reg ? "Create Librarian Account" : "Librarian Sign In"}</h1>
+            ${
+              !reg
+                ? `<h1 style="text-align:center;font-size:22px;margin:0 0 6px;font-weight:700;letter-spacing:-0.02em;color:var(--navy)">Welcome Back</h1>
+                   <p style="text-align:center;color:var(--mu);font-size:13px;margin:0 0 20px">Sign in to access your library dashboard and catalog.</p>`
+                : `<h1 style="text-align:center;font-size:22px;margin:0 0 20px;font-weight:700;letter-spacing:-0.02em;color:var(--navy)">Create Librarian Account</h1>`
+            }
 
             <form id="af" novalidate>
               ${reg ? fl("name", "Full Name *", "text", "", "") : ""}
               ${fl("email", "Institutional Email *", "email", "", "")}
               ${reg ? fl("staffId", "Staff / Faculty ID", "text", "", "") : ""}
               ${pwf("pw", "Password *")}
-              ${!reg ? `<div style="display:flex;justify-content:flex-end;margin:-4px 0 14px"><a href="#/forgot-password" style="font-size:12.5px;color:var(--navy);font-weight:600;text-decoration:none">Forgot Password?</a></div>` : ""}
-              ${reg ? `<small style="color:var(--mu);display:block;margin:-4px 0 8px">Minimum 8 characters.</small>${pwf("pw2", "Confirm Password *")}` : ""}
-              <button class="btn p" style="width:100%;margin-top:18px;padding:12px;font-size:14.5px;font-weight:600" id="sb">${reg ? "Register Account" : "Sign In"}</button>
+              ${
+                reg
+                  ? `<div id="pw-strength-box" style="margin:-2px 0 12px;display:none">
+                       <div style="height:4px;width:100%;background:#e5e7eb;border-radius:2px;overflow:hidden">
+                         <div id="pw-strength-bar" style="height:100%;width:0%;transition:all 0.3s ease"></div>
+                       </div>
+                       <div id="pw-strength-text" style="font-size:11.5px;color:var(--mu);margin-top:4px"></div>
+                     </div>`
+                  : ""
+              }
+              ${
+                !reg
+                  ? `<div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px">
+                       <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--tx);margin:0;user-select:none">
+                         <input type="checkbox" id="rememberMe" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer">
+                         <span>Remember me</span>
+                       </label>
+                       <a href="#/forgot-password" style="font-size:12.5px;color:var(--navy);font-weight:600;text-decoration:none">Forgot Password?</a>
+                     </div>`
+                  : pwf("pw2", "Confirm Password *")
+              }
+              <button class="btn p" style="width:100%;margin-top:${reg ? "16px" : "4px"};padding:12px;font-size:14.5px;font-weight:600" id="sb">${reg ? "Register Account" : "Sign In"}</button>
             </form>
+
+            ${orDivider}
+            ${googleBtn}
 
             <div style="text-align:center;margin-top:20px;font-size:13px">
               <a href="${reg ? "#/login" : "#/register"}" style="color:var(--navy);font-weight:600">
-                ${reg ? "Already registered? Sign In" : "New librarian? Register account"}
+                ${reg ? "Already registered? Sign In" : "New librarian? Create Librarian Account"}
               </a>
             </div>
           </div>
@@ -1491,7 +1609,18 @@
       function bindAuth(reg) {
         let isSubmitting = false;
 
-        // Clear error text on user input
+        // Remember Me auto-fill on Login
+        if (!reg) {
+          const rememberedEmail = localStorage.getItem("clms_remember_email");
+          const emailInput = $("#email");
+          const rmCheck = $("#rememberMe");
+          if (rememberedEmail && emailInput) {
+            emailInput.value = rememberedEmail;
+            if (rmCheck) rmCheck.checked = true;
+          }
+        }
+
+        // Live input clearance
         ["name", "email", "staffId", "pw", "pw2"].forEach((id) => {
           const el = $("#" + id);
           if (el) {
@@ -1501,6 +1630,45 @@
             });
           }
         });
+
+        // Registration: Live Password Strength & Confirmation
+        if (reg) {
+          const pwInput = $("#pw");
+          const pwBox = $("#pw-strength-box");
+          const pwBar = $("#pw-strength-bar");
+          const pwTxt = $("#pw-strength-text");
+
+          if (pwInput && pwBox && pwBar && pwTxt) {
+            pwInput.addEventListener("input", () => {
+              const val = pwInput.value;
+              if (!val) {
+                pwBox.style.display = "none";
+                return;
+              }
+              pwBox.style.display = "block";
+              const s = calcPasswordStrength(val);
+              pwBar.style.width = s.width;
+              pwBar.style.backgroundColor = s.color;
+              pwTxt.innerHTML = `<span style="font-weight:600;color:${s.color}">${s.text}</span> — ${s.hint}`;
+            });
+          }
+
+          const pw2Input = $("#pw2");
+          if (pw2Input) {
+            pw2Input.addEventListener("input", () => {
+              const pwVal = $("#pw")?.value || "";
+              const pw2Val = pw2Input.value;
+              const errEl = $("#e_pw2");
+              if (errEl) {
+                if (pw2Val && pwVal !== pw2Val) {
+                  errEl.textContent = "Passwords do not match.";
+                } else {
+                  errEl.textContent = "";
+                }
+              }
+            });
+          }
+        }
 
         $("#af").onsubmit = async (e) => {
           e.preventDefault();
@@ -1564,12 +1732,22 @@
               });
             }
 
-            const token = res.token || res.access_token;
+            const token = res.token || res.access_token || res.data?.token;
             if (!token) throw new Error("Authentication token not received");
             localStorage.setItem("clms_token", token);
-            currentUser = res.user;
-            localStorage.setItem("clms_user", JSON.stringify(res.user));
+            currentUser = res.user || res.data?.user;
+            localStorage.setItem("clms_user", JSON.stringify(currentUser));
             auth = true;
+
+            // Remember Me persistence
+            if (!reg) {
+              const rmCheck = $("#rememberMe");
+              if (rmCheck && rmCheck.checked) {
+                localStorage.setItem("clms_remember_email", v("email"));
+              } else {
+                localStorage.removeItem("clms_remember_email");
+              }
+            }
 
             sb.innerHTML = "✓ Signed in!";
             toast(

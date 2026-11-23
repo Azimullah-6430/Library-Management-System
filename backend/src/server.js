@@ -1,10 +1,35 @@
 'use strict';
 require('dotenv').config();
 const http = require('http');
+const { execSync } = require('child_process');
 const app = require('./app');
 const connectDB = require('./config/db');
 
 const PORT = parseInt(process.env.PORT, 10) || 5000;
+
+function ensurePortFree(port) {
+  if (process.platform === 'win32') {
+    try {
+      const output = execSync(`netstat -ano -p tcp | findstr :${port} | findstr LISTENING`, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      });
+      const lines = output.trim().split('\n');
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && pid !== String(process.pid) && pid !== '0') {
+          console.log(`🧹  Freeing port ${port} occupied by previous process (PID ${pid})...`);
+          try {
+            execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' });
+          } catch (_) {}
+        }
+      }
+    } catch (_) {
+      // Port is already free
+    }
+  }
+}
 
 process.on('uncaughtException', (err) => {
   console.error('⚠️  Uncaught Exception caught:', err.message);
@@ -16,6 +41,8 @@ process.on('unhandledRejection', (reason) => {
 
 (async () => {
   await connectDB();
+
+  ensurePortFree(PORT);
 
   // Create primary IPv4 server on 0.0.0.0 (serves 127.0.0.1 and all network adapters)
   const server = http.createServer(app);

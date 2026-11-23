@@ -1,7 +1,10 @@
 'use strict';
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
 
 const signToken = (userId) => {
   return jwt.sign(
@@ -13,12 +16,29 @@ const signToken = (userId) => {
 
 const sendTokenResponse = (res, statusCode, user, message) => {
   const token = signToken(user._id);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // Set secure HTTP-only cookie
+  res.cookie('clms_token', token, {
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
+  });
+
+  const publicUser = typeof user.toPublic === 'function' ? user.toPublic() : user;
+
   res.status(statusCode).json({
     success: true,
     message,
     token,
     access_token: token,
-    user: typeof user.toPublic === 'function' ? user.toPublic() : user,
+    user: publicUser,
+    data: {
+      user: publicUser,
+      token,
+    },
   });
 };
 
@@ -336,5 +356,94 @@ exports.resetPassword = async (req, res, next) => {
  * POST /api/v1/auth/logout
  */
 exports.logout = async (_req, res) => {
+  res.cookie('clms_token', 'none', {
+    expires: new Date(Date.now() + 5 * 1000),
+    httpOnly: true,
+    path: '/',
+  });
   res.json({ success: true, message: 'Logged out successfully.' });
+};
+
+/**
+ * POST /api/v1/auth/google
+ * Cryptographically verifies Google ID Token and logs in or registers librarian
+ */
+exports.googleLogin = async (req, res, next) => {
+  try {
+    const token = req.body.credential || req.body.idToken || req.body.token;
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google ID token (credential) is required for Google Sign-In.',
+      });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return res.status(503).json({
+        success: false,
+        configured: false,
+        message:
+          'Google OAuth is not configured on this server. Please set GOOGLE_CLIENT_ID in backend/.env',
+      });
+    }
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: clientId,
+      });
+      payload = ticket.getPayload();
+    } catch (verErr) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired Google authentication token: ' + verErr.message,
+      });
+    }
+
+    const { sub: googleId, email: rawEmail, name } = payload;
+    const email = normalizeEmail(rawEmail);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google account did not return a valid email address.',
+      });
+    }
+
+    // 1. Find by googleId
+    let user = await User.findOne({ googleId });
+    if (!user) {
+      // 2. Find by email to link account
+      user = await User.findOne({ email });
+      if (user) {
+        user.googleId = googleId;
+        await user.save({ validateBeforeSave: false });
+      } else {
+        // 3. Create new user
+        user = await User.create({
+          name: name || 'Crescent Librarian',
+          email,
+          googleId,
+          role: 'librarian',
+          department: 'Central Library',
+        });
+      }
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your librarian account is deactivated. Please contact the administrator.',
+      });
+    }
+
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    sendTokenResponse(res, 200, user, 'Signed in with Google successfully.');
+  } catch (err) {
+    next(err);
+  }
 };

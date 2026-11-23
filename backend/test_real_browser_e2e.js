@@ -179,7 +179,7 @@ async function runRealBrowserVerification() {
       '6. Navigate to Login Page',
       'Display login form with email and password inputs',
       `Header: "${loginHeader}", Form displayed: true`,
-      loginHeader.includes('Librarian Sign In')
+      loginHeader.includes('Welcome Back') || loginHeader.includes('Librarian Sign In')
     );
 
     // ──────────────────────────────────────────────────────────────────────────

@@ -3,9 +3,20 @@ const passport = require('passport');
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const User = require('../models/User');
 
-// ── JWT Strategy ─────────────────────────────────────────────────────────────
+// ── JWT Strategy (Supports both Authorization Header and HTTP-Only Cookie) ───
+const cookieExtractor = (req) => {
+  let token = null;
+  if (req && req.cookies) {
+    token = req.cookies['clms_token'];
+  }
+  return token;
+};
+
 const jwtOpts = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  jwtFromRequest: ExtractJwt.fromExtractors([
+    ExtractJwt.fromAuthHeaderAsBearerToken(),
+    cookieExtractor,
+  ]),
   secretOrKey: process.env.JWT_SECRET || 'crescent_library_jwt_secret_key_change_in_production',
 };
 

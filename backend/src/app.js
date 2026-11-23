@@ -5,6 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 const passport = require('./config/passport');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -26,14 +27,17 @@ app.use(
   })
 );
 
+// ── Cookie Parser ───────────────────────────────────────────────────────────
+app.use(cookieParser());
+
 // ── CORS & Private Network Access (PNA) Configuration ───────────────────────
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (!origin || origin === 'null') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  } else {
+  if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader(

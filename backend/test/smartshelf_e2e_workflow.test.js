@@ -194,7 +194,7 @@ async function runEndToEndWorkflow() {
 
     // 6. Intelligent Book Finder
     console.log('\n[Step 6/10] Testing Intelligent Book Finder & Location Retrieval…');
-    const findRes = await request('/smartshelf/books/find?q=Architecture', 'GET', null, token);
+    const findRes = await request(`/smartshelf/books/find?q=${encodeURIComponent(uniqueAcc)}`, 'GET', null, token);
     assert(
       findRes.status === 200 && findRes.body?.total >= 1,
       'Book Finder retrieves catalog title matching search keyword'

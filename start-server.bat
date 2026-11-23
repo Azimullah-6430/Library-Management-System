@@ -8,7 +8,7 @@ echo.
 
 cd /d "%~dp0"
 
-echo [1/3] Checking if Node.js is installed...
+echo [1/4] Checking Node.js installation...
 where node >nul 2>nul
 if %errorlevel% neq 0 (
     echo [ERROR] Node.js is not found in your PATH. Please install Node.js from https://nodejs.org/
@@ -16,7 +16,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [2/3] Checking backend dependencies...
+echo [2/4] Verifying dependencies...
 if not exist "backend\node_modules" (
     echo Installing backend dependencies...
     cd backend && npm install && cd ..
