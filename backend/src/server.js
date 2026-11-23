@@ -1,4 +1,6 @@
 'use strict';
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 require('dotenv').config();
 const http = require('http');
 const { execSync } = require('child_process');
@@ -71,20 +73,22 @@ process.on('unhandledRejection', (reason) => {
   // On Windows, bind an auxiliary IPv6 loopback listener on [::1]:PORT so
   // browser requests to "http://localhost:PORT" resolve immediately without delay
   let server6 = null;
-  try {
-    server6 = http.createServer(app);
-    server6.keepAliveTimeout = 65000;
-    server6.headersTimeout = 66000;
-    server6.listen(PORT, '::1', () => {
-      console.log(`🌐  IPv6 Loopback listener active on [::1]:${PORT}`);
-    });
-    server6.on('error', (err) => {
-      if (err.code !== 'EADDRINUSE') {
-        console.warn('IPv6 listener notice:', err.message);
-      }
-    });
-  } catch (e) {
-    // Silently continue with IPv4
+  if (process.platform === 'win32') {
+    try {
+      server6 = http.createServer(app);
+      server6.keepAliveTimeout = 65000;
+      server6.headersTimeout = 66000;
+      server6.listen(PORT, '::1', () => {
+        console.log(`🌐  IPv6 Loopback listener active on [::1]:${PORT}`);
+      });
+      server6.on('error', (err) => {
+        if (err.code !== 'EADDRINUSE') {
+          console.warn('IPv6 listener notice:', err.message);
+        }
+      });
+    } catch (e) {
+      // Silently continue with IPv4
+    }
   }
 
   // Graceful shutdown

@@ -1,5 +1,6 @@
 'use strict';
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -123,8 +124,16 @@ app.use('/api/smartshelf', smartshelfRoutes);
 app.use('/smartshelf', smartshelfRoutes);
 
 // ── Frontend Static Files & SPA Fallback ────────────────────────────────────
-const frontendDir = path.resolve(__dirname, '../../crescent-library-frontend');
-app.use(express.static(frontendDir));
+const frontendCandidates = [
+  path.resolve(__dirname, '../../crescent-library-frontend'),
+  path.resolve(__dirname, '../crescent-library-frontend'),
+  path.resolve(__dirname, '../../public'),
+];
+const frontendDir = frontendCandidates.find((d) => fs.existsSync(d));
+
+if (frontendDir) {
+  app.use(express.static(frontendDir));
+}
 
 app.get('*', (req, res, next) => {
   if (
@@ -141,7 +150,15 @@ app.get('*', (req, res, next) => {
   ) {
     return next();
   }
-  res.sendFile(path.join(frontendDir, 'index.html'));
+  if (frontendDir && fs.existsSync(path.join(frontendDir, 'index.html'))) {
+    return res.sendFile(path.join(frontendDir, 'index.html'));
+  }
+  res.json({
+    service: 'Crescent Library Management System API',
+    status: 'online',
+    health: '/api/health',
+    api_docs: '/api/v1',
+  });
 });
 
 // ── 404 Handler for API Routes ──────────────────────────────────────────────

@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "outputDirectory": "crescent-library-frontend",
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/crescent-library-frontend/assets/$1"
+    },
+    {
+      "src": "/config.js",
+      "dest": "/crescent-library-frontend/config.js"
+    },
+    {
+      "src": "/api/v1/(.*)",
+      "dest": "https://crescent-library-backend.onrender.com/api/v1/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "https://crescent-library-backend.onrender.com/api/$1"
+    },
+    {
+      "src": "/health",
+      "dest": "https://crescent-library-backend.onrender.com/health"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "https://crescent-library-backend.onrender.com/uploads/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/crescent-library-frontend/index.html"
+    }
+  ]
+}

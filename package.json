@@ -13,6 +13,9 @@
     "test:e2e": "npm --prefix backend run test:e2e",
     "postinstall": "npm --prefix backend install"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "keywords": [
     "crescent-library",
     "library-management"

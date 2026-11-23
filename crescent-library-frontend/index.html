@@ -1095,6 +1095,51 @@
   <body>
     <div id="root"></div>
     <div id="toast" aria-live="polite"></div>
+
+    <!-- Server Connection Settings Modal -->
+    <div id="server-settings-modal" style="display:none;position:fixed;inset:0;background:rgba(10,26,48,0.65);backdrop-filter:blur(4px);z-index:99999;align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
+      <div style="background:var(--sf);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.3);width:100%;max-width:540px;padding:26px;border:1px solid var(--bd);box-sizing:border-box;animation:fadeIn 0.2s ease">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--bd);padding-bottom:12px">
+          <h3 style="margin:0;font-size:18px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">⚙️</span> Library Server Connection
+          </h3>
+          <button type="button" id="btn-close-server-settings" onclick="closeServerSettingsModal()" style="background:none;border:none;font-size:24px;color:var(--mu);cursor:pointer;line-height:1;padding:0 4px">&times;</button>
+        </div>
+
+        <p style="font-size:13px;color:var(--mu);margin:0 0 16px;line-height:1.55">
+          Configure the backend API URL for Crescent Library. If deployed on <strong>Render</strong>, paste your live Web Service URL below (e.g. <code>https://your-service.onrender.com</code>).
+        </p>
+
+        <label style="display:block;font-size:12.5px;font-weight:600;color:var(--tx);margin-bottom:6px">
+          Backend Base URL
+        </label>
+        <div style="margin-bottom:10px">
+          <input id="input-backend-url" type="url" placeholder="https://crescent-library-backend.onrender.com" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;font-size:13px;font-family:monospace;background:var(--bg);color:var(--tx)">
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+          <button type="button" class="btn s" onclick="setPresetBackend('https://crescent-library-backend.onrender.com')" style="font-size:11.5px;padding:5px 9px">Render Default</button>
+          <button type="button" class="btn s" onclick="setPresetBackend(window.location.origin)" style="font-size:11.5px;padding:5px 9px">Same-Origin (Vercel)</button>
+          <button type="button" class="btn s" onclick="setPresetBackend('http://localhost:5000')" style="font-size:11.5px;padding:5px 9px">Localhost:5000</button>
+        </div>
+
+        <!-- Live Server Diagnostic Box -->
+        <div id="server-diag-box" style="padding:13px 14px;border-radius:8px;background:var(--bg);border:1px solid var(--bd);font-size:12.5px;line-height:1.5;margin-bottom:18px">
+          <div style="display:flex;align-items:center;gap:7px;font-weight:600">
+            <span id="diag-dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#e8a94a"></span>
+            <span id="diag-status">Ready to check</span>
+          </div>
+          <div id="diag-details" style="font-size:12px;color:var(--mu);margin-top:5px">
+            Click <strong>Test Connection</strong> to ping the backend API and verify MongoDB connectivity.
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+          <button type="button" class="btn s" id="btn-test-backend" onclick="testServerConnection(true)" style="padding:8px 16px;font-size:13px">🔍 Test Connection</button>
+          <button type="button" class="btn p" id="btn-save-backend" onclick="saveServerSettings()" style="padding:8px 18px;font-size:13px;background:var(--navy);color:#fff;font-weight:600">Save & Connect</button>
+        </div>
+      </div>
+    </div>
     <script>
       const $ = (s) => document.querySelector(s);
       const $$ = (s) => document.querySelectorAll(s);
@@ -1103,73 +1148,128 @@
 
       // ── Smart API Base URL resolver & Multi-Endpoint Failover ──────────────────
       function getApiCandidates() {
-        if (window.CLMS_CONFIG && Array.isArray(window.CLMS_CONFIG.API_CANDIDATES) && window.CLMS_CONFIG.API_CANDIDATES.length) {
-          return window.CLMS_CONFIG.API_CANDIDATES;
-        }
         const list = [];
-        if (window.CLMS_API) list.push(window.CLMS_API.replace(/\/$/, ""));
-        const port = window.location.port;
-        const hostname = window.location.hostname || "localhost";
+        const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+        const hostname = (typeof window !== "undefined" && window.location.hostname) || "localhost";
+        const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "";
 
-        // If page is served directly by the backend on port 5000, prioritize same-origin
-        if (port === "5000") {
+        // 1. URL Query parameter (?api=https://... or ?backend=https://...)
+        if (typeof window !== "undefined" && window.location && window.location.search) {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const queryApi = params.get("api") || params.get("backend");
+            if (queryApi) {
+              const clean = queryApi.replace(/\/+$/, "");
+              list.push(clean.endsWith("/api/v1") ? clean : `${clean}/api/v1`);
+              localStorage.setItem("clms_backend_url", clean);
+            }
+          } catch (_) {}
+        }
+
+        // 2. User configured backend URL from localStorage
+        try {
+          const stored = localStorage.getItem("clms_backend_url");
+          if (stored) {
+            const clean = stored.replace(/\/+$/, "");
+            list.push(clean.endsWith("/api/v1") ? clean : `${clean}/api/v1`);
+          }
+        } catch (_) {}
+
+        // 3. Configuration from config.js
+        if (window.CLMS_CONFIG && Array.isArray(window.CLMS_CONFIG.API_CANDIDATES) && window.CLMS_CONFIG.API_CANDIDATES.length) {
+          list.push(...window.CLMS_CONFIG.API_CANDIDATES);
+        }
+        if (window.CLMS_API) {
+          const g = window.CLMS_API.replace(/\/+$/, "");
+          list.push(g.endsWith("/api/v1") ? g : `${g}/api/v1`);
+        }
+
+        // 4. Same-origin relative path (for Vercel rewrites or self-hosted Express)
+        if (typeof window !== "undefined" && window.location.origin) {
           list.push(`${window.location.origin}/api/v1`);
           list.push(`${window.location.origin}/api`);
         }
 
-        // Dedicated local Express backend port
-        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "") {
+        // 5. Default Render Production URL
+        const defaultRender = (window.CLMS_CONFIG && window.CLMS_CONFIG.PRODUCTION_RENDER_URL) || "https://crescent-library-backend.onrender.com";
+        if (defaultRender) {
+          const r = defaultRender.replace(/\/+$/, "");
+          list.push(r.endsWith("/api/v1") ? r : `${r}/api/v1`);
+        }
+
+        // 6. Local development (ONLY if running locally and NOT over HTTPS)
+        if (isLocalhost && !isHttps) {
           list.push("http://localhost:5000/api/v1");
           list.push("http://127.0.0.1:5000/api/v1");
           list.push("http://localhost:5000/api");
           list.push("http://127.0.0.1:5000/api");
-        } else {
-          list.push(`http://${hostname}:5000/api/v1`);
-          if (port === "5000" || port === "" || port === "80" || port === "443") {
-            list.push(`${window.location.origin}/api/v1`);
-          }
         }
 
-        list.push("http://localhost:5000/api/v1");
-        list.push("http://127.0.0.1:5000/api/v1");
-        return [...new Set(list)];
+        // Filter out any insecure HTTP URLs when page is loaded over HTTPS to eliminate Mixed Content errors
+        const sanitized = list.filter((url) => {
+          if (!url) return false;
+          if (isHttps && url.startsWith("http://")) return false;
+          return true;
+        });
+
+        return [...new Set(sanitized)];
       }
 
       function getApiBase() {
-        return getApiCandidates()[0];
+        const c = getApiCandidates();
+        return c.length ? c[0] : (window.location.protocol === "https:" ? "https://crescent-library-backend.onrender.com/api/v1" : "http://localhost:5000/api/v1");
       }
+
       let API_BASE = getApiBase();
       let backendStatus = "checking"; // "online" | "degraded" | "offline" | "checking"
 
+      function updateServerStatusIndicators(status, label) {
+        const badge = $("#header-db-badge");
+        const dot = $("#auth-server-dot");
+        const txt = $("#auth-server-text");
+
+        if (status === "online") {
+          if (badge) { badge.className = "bdg Available"; badge.textContent = "Online"; }
+          if (dot) dot.style.background = "#4cc38a";
+          if (txt) txt.textContent = "Server: Online ✅";
+        } else if (status === "degraded") {
+          if (badge) { badge.className = "bdg Warning"; badge.textContent = "DB Initializing"; }
+          if (dot) dot.style.background = "#e8a94a";
+          if (txt) txt.textContent = "Server: DB Initializing ⚠️";
+        } else {
+          if (badge) { badge.className = "bdg Lost"; badge.textContent = "Offline"; }
+          if (dot) dot.style.background = "#ff8a80";
+          if (txt) txt.textContent = label || "Server: Offline ❌";
+        }
+      }
+
       async function checkBackendHealth(silent = false) {
         const candidates = getApiCandidates();
-        const badge = $("#header-db-badge");
 
         for (const candidate of candidates) {
-          const rootUrl = candidate.replace("/api/v1", "");
+          const rootUrl = candidate.replace(/\/api(\/v1)?$/, "");
           const healthUrl = `${rootUrl}/health`;
           try {
             const c = new AbortController();
-            const tid = setTimeout(() => c.abort(), 2500);
+            const tid = setTimeout(() => c.abort(), 3000);
             const res = await fetch(healthUrl, { signal: c.signal });
             clearTimeout(tid);
+
+            if (res.headers.get("x-render-routing") === "no-server") {
+              continue; // Render web service does not exist at this subdomain
+            }
+
             if (res.ok || res.status === 503) {
               const hData = await res.json().catch(() => ({}));
               API_BASE = candidate;
               if (res.ok && hData.database === "connected") {
                 backendStatus = "online";
-                if (badge) {
-                  badge.className = "bdg Available";
-                  badge.textContent = "Online";
-                }
+                updateServerStatusIndicators("online");
                 if (!silent) toast("Server connected and operational.");
                 return true;
               } else {
                 backendStatus = "degraded";
-                if (badge) {
-                  badge.className = "bdg Warning";
-                  badge.textContent = "DB Initializing";
-                }
+                updateServerStatusIndicators("degraded");
                 if (!silent) toast("Backend reached; database initializing.", 1);
                 return true;
               }
@@ -1178,13 +1278,116 @@
         }
 
         backendStatus = "offline";
-        if (badge) {
-          badge.className = "bdg Lost";
-          badge.textContent = "Offline";
-        }
+        updateServerStatusIndicators("offline");
         return false;
       }
       checkBackendHealth(true);
+
+      // ── Server Connection Modal Controller ─────────────────────────────────────
+      function openServerSettingsModal() {
+        const modal = document.getElementById("server-settings-modal");
+        if (!modal) return;
+        const input = document.getElementById("input-backend-url");
+        if (input) {
+          const stored = localStorage.getItem("clms_backend_url");
+          input.value = stored || API_BASE || "https://crescent-library-backend.onrender.com";
+        }
+        modal.style.display = "flex";
+        testServerConnection(false);
+      }
+
+      function closeServerSettingsModal() {
+        const modal = document.getElementById("server-settings-modal");
+        if (modal) modal.style.display = "none";
+      }
+
+      function setPresetBackend(url) {
+        const input = document.getElementById("input-backend-url");
+        if (input) input.value = url;
+        testServerConnection(false);
+      }
+
+      async function testServerConnection(interactive = true) {
+        const input = document.getElementById("input-backend-url");
+        const statusEl = document.getElementById("diag-status");
+        const detailEl = document.getElementById("diag-details");
+        const dotEl = document.getElementById("diag-dot");
+
+        let target = (input ? input.value : API_BASE).trim().replace(/\/+$/, "");
+        if (!target) {
+          if (detailEl) detailEl.textContent = "Please enter a valid backend URL.";
+          return false;
+        }
+
+        if (dotEl) dotEl.style.background = "#e8a94a";
+        if (statusEl) statusEl.textContent = "Pinging server...";
+        if (detailEl) detailEl.textContent = `Connecting to ${target}...`;
+
+        const rootUrl = target.replace(/\/api(\/v1)?$/, "");
+        const healthUrl = `${rootUrl}/health`;
+
+        const startTime = Date.now();
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 6000);
+          const res = await fetch(healthUrl, { signal: controller.signal });
+          clearTimeout(timer);
+          const latency = Date.now() - startTime;
+
+          if (res.headers.get("x-render-routing") === "no-server" || (res.status === 404 && res.headers.get("server") === "cloudflare")) {
+            if (dotEl) dotEl.style.background = "#ff8a80";
+            if (statusEl) statusEl.textContent = "Render Service Not Found (404)";
+            if (detailEl) detailEl.innerHTML = `<span style="color:var(--er)">No active Render web service at this subdomain. Please verify your Render service name, or deploy your backend on Render.</span>`;
+            return false;
+          }
+
+          if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+            if (dotEl) dotEl.style.background = "#4cc38a";
+            if (statusEl) statusEl.textContent = `Connected (${latency}ms)`;
+            const dbState = data.database === "connected" ? "MongoDB Atlas Connected ✅" : "Database Initializing ⚠️";
+            if (detailEl) detailEl.innerHTML = `<span style="color:var(--ok)">Backend operational! ${dbState} (${esc(data.service || "CLMS")})</span>`;
+            return true;
+          } else {
+            if (dotEl) dotEl.style.background = "#e8a94a";
+            if (statusEl) statusEl.textContent = `Server reachable (HTTP ${res.status})`;
+            if (detailEl) detailEl.textContent = `Server responded, but database is initializing (HTTP ${res.status}).`;
+            return false;
+          }
+        } catch (err) {
+          if (dotEl) dotEl.style.background = "#ff8a80";
+          if (statusEl) statusEl.textContent = "Connection Failed (Offline)";
+          let hint = "Unable to connect. Ensure your backend server is deployed and running.";
+          if (window.location.protocol === "https:" && target.startsWith("http://")) {
+            hint = "Insecure HTTP URL blocked by browser on HTTPS site (Mixed Content). Use an https:// backend URL.";
+          }
+          if (detailEl) detailEl.innerHTML = `<span style="color:var(--er)">${esc(err.message || "Failed to fetch")}. ${hint}</span>`;
+          return false;
+        }
+      }
+
+      async function saveServerSettings() {
+        const input = document.getElementById("input-backend-url");
+        if (!input) return;
+        let url = input.value.trim().replace(/\/+$/, "");
+        if (!url) {
+          toast("Please enter a valid backend URL.", 1);
+          return;
+        }
+
+        if (window.location.protocol === "https:" && url.startsWith("http://")) {
+          toast("Insecure HTTP backend blocked on HTTPS site. Please use an HTTPS URL for production.", 1);
+          return;
+        }
+
+        const isReachable = await testServerConnection(true);
+        const cleanBase = url.endsWith("/api/v1") ? url : `${url.replace(/\/api$/, "")}/api/v1`;
+        localStorage.setItem("clms_backend_url", cleanBase);
+        API_BASE = cleanBase;
+        toast(`Backend configured: ${API_BASE}`);
+        closeServerSettingsModal();
+        checkBackendHealth(false);
+      }
 
       const fmt = (n) =>
         new Intl.NumberFormat("en-IN", {
@@ -1226,7 +1429,7 @@
           const url = buildUrl(base);
           try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 8000);
+            const timer = setTimeout(() => controller.abort(), 9000);
             const tryRes = await fetch(url, {
               ...opts,
               credentials: "include",
@@ -1236,27 +1439,42 @@
             });
             clearTimeout(timer);
 
-            // If a candidate returns 404 or 405 (such as a static file server like Live Server on 5500),
-            // and there are further candidates available in the list, continue failover to port 5000!
-            if ((tryRes.status === 404 || tryRes.status === 405) && i < candidates.length - 1) {
+            const isRenderMissing = tryRes.headers.get("x-render-routing") === "no-server";
+
+            // If a candidate returns 404 or 405 (such as a static file server or inactive proxy),
+            // and there are further candidates available in the list, continue failover!
+            if ((tryRes.status === 404 || tryRes.status === 405 || isRenderMissing) && i < candidates.length - 1) {
               lastErr = new Error(`Endpoint not found on ${base}`);
               continue;
             }
 
             res = tryRes;
+
+            // If final candidate is Render no-server 404, throw actionable error
+            if (isRenderMissing || (tryRes.status === 404 && tryRes.headers.get("server") === "cloudflare")) {
+              const err = new Error(
+                `Backend service not active on Render (${base}). Please ensure your Render backend web service is running, or configure your live URL in Server Settings.`
+              );
+              err.status = 404;
+              err.isRenderNoServer = true;
+              throw err;
+            }
+
             // Connected successfully! Lock this base URL as current API_BASE
             API_BASE = base;
             backendStatus = "online";
+            updateServerStatusIndicators("online");
             break;
           } catch (netErr) {
             lastErr = netErr;
+            if (netErr.isRenderNoServer) throw netErr;
             // continue trying alternative candidate
           }
         }
 
         if (!res) {
           const netErr = new Error(
-            "Cannot connect to Crescent Library backend (port 5000). Please ensure server is running."
+            "Cannot connect to Crescent Library backend server. Please check your backend URL in Server Settings."
           );
           netErr.isNetworkError = true;
           netErr.originalError = lastErr;
@@ -1272,7 +1490,16 @@
         }
 
         if (!res.ok) {
-          const errMsg = data?.message || data?.detail || res.statusText || "API request failed";
+          let errMsg = data?.message || data?.detail;
+          if (!errMsg) {
+            if (res.status === 404) {
+              errMsg = `Backend server endpoint not found (404) on ${API_BASE}. Please verify your backend deployment or configure Server Settings.`;
+            } else if (res.status === 502 || res.status === 503) {
+              errMsg = `Backend server is temporarily unavailable or restarting (${res.status}). Please try again in a few moments.`;
+            } else {
+              errMsg = res.statusText || "API request failed";
+            }
+          }
           const err = new Error(errMsg);
           err.status = res.status;
           err.data = data;
@@ -1602,6 +1829,14 @@
                 ${reg ? "Already registered? Sign In" : "New librarian? Create Librarian Account"}
               </a>
             </div>
+
+            <div style="text-align:center;margin-top:16px;border-top:1px solid var(--bd);padding-top:14px">
+              <button id="btn-server-settings" type="button" onclick="openServerSettingsModal()" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:6px;font-family:inherit;padding:4px 8px;border-radius:4px;transition:all 0.2s ease">
+                <span id="auth-server-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e8a94a"></span>
+                <span id="auth-server-text">Server: Checking...</span>
+                <span style="text-decoration:underline;margin-left:4px;color:var(--navy);font-weight:600">Configure ⚙️</span>
+              </button>
+            </div>
           </div>
         </div>`;
       }
@@ -1763,9 +1998,10 @@
 
             if (err.isNetworkError || err.message === "Failed to fetch") {
               toast(
-                "Unable to connect to the library server on port 5000. Please ensure the backend is started (run start-server.bat or npm start).",
+                "Unable to connect to the library backend. Please verify your server URL in Server Settings.",
                 1,
               );
+              openServerSettingsModal();
               return;
             }
 
@@ -1777,11 +2013,12 @@
               return;
             }
 
-            if (err.status === 404) {
+            if (err.status === 404 || err.isRenderNoServer) {
               toast(
-                "Cannot reach library backend on port 5000. Please start the server by double-clicking start-server.bat in the project folder.",
+                err.message || "Backend server returned 404 (Not Found). Please configure your live backend URL in Server Settings.",
                 1,
               );
+              openServerSettingsModal();
               return;
             }
 
@@ -4000,7 +4237,10 @@
     </div>
     <div class="fld" style="margin-top:16px">
       <label>Connected Express API</label>
-      <input value="${esc(API_BASE)}" disabled style="background:var(--bg)">
+      <div style="display:flex;gap:8px">
+        <input value="${esc(API_BASE)}" disabled style="background:var(--bg);flex:1">
+        <button class="btn s" type="button" onclick="openServerSettingsModal()" style="white-space:nowrap">Configure ⚙️</button>
+      </div>
     </div>
   </div>
 `,
