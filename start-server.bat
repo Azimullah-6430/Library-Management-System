@@ -22,7 +22,12 @@ if not exist "backend\node_modules" (
     cd backend && npm install && cd ..
 )
 
-echo [3/3] Starting Crescent Library Server on port 5000...
+echo [3/4] Ensuring port 5000 is available...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING 2^>nul') do (
+    taskkill /f /pid %%a >nul 2>nul
+)
+
+echo [4/4] Starting Crescent Library Server on port 5000...
 echo.
 echo Application will be available at: http://localhost:5000
 echo.

@@ -1585,7 +1585,7 @@
 
             if (err.isNetworkError || err.message === "Failed to fetch") {
               toast(
-                "Unable to connect to the library server. Please check your network connection and try again.",
+                "Unable to connect to the library server on port 5000. Please ensure the backend is started (run start-server.bat or npm start).",
                 1,
               );
               return;
