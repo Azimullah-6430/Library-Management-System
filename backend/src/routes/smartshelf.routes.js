@@ -35,6 +35,8 @@ router.post('/copies/:id/verify-audit', authorize('librarian', 'admin'), ctrl.ma
 
 // ── Intelligent Book Finder & Discovery ──────────────────────────────────────
 router.get('/books/find', ctrl.findBooks);
+router.get('/books/search', ctrl.findBooks);
+router.get('/search', ctrl.findBooks);
 
 // ── Printable Labels & PDF Generation ─────────────────────────────────────────
 router.get('/labels/layouts', ctrl.getLabelLayouts);
@@ -50,16 +52,24 @@ router.post('/books/:bookId/copies', authorize('librarian', 'admin'), (req, res,
 
 // ── Movements ────────────────────────────────────────────────────────────────
 router.get('/movements', authorize('librarian', 'admin'), ctrl.getAllMovements);
+router.post('/movements', authorize('librarian', 'admin'), (req, res, next) => {
+  req.params.id = req.body.copyId || req.body.id;
+  ctrl.moveCopy(req, res, next);
+});
 
 // ── Universal QR Scanner & Verification ──────────────────────────────────────
 router.post('/scan', ctrl.resolveScan);
+router.post('/resolve-scan', ctrl.resolveScan);
 
 // ── Inventory Audits ─────────────────────────────────────────────────────────
 router.get('/audits', authorize('librarian', 'admin'), ctrl.getAudits);
 router.get('/audits/:auditId', authorize('librarian', 'admin'), ctrl.getAuditById);
+router.post('/audits', authorize('librarian', 'admin'), ctrl.startAudit);
 router.post('/audits/start', authorize('librarian', 'admin'), ctrl.startAudit);
 router.post('/audits/:auditId/scan', authorize('librarian', 'admin'), ctrl.recordAuditScan);
+router.post('/audits/:auditId/scans', authorize('librarian', 'admin'), ctrl.recordAuditScan);
 router.post('/audits/:auditId/complete', authorize('librarian', 'admin'), ctrl.completeAudit);
+router.patch('/audits/:auditId/finalize', authorize('librarian', 'admin'), ctrl.completeAudit);
 router.post('/audits/:auditId/resolve', authorize('librarian', 'admin'), ctrl.resolveAuditException);
 router.get('/audits/:auditId/export', authorize('librarian', 'admin'), ctrl.exportAuditReport);
 

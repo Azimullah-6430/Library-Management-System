@@ -7,6 +7,7 @@ const { uploadCovers } = require('../middleware/upload');
 
 // Cover OCR extraction (available for librarian add-book workflow)
 router.post('/extract-details', uploadCovers, ctrl.extractBookDetailsFromCovers);
+router.post('/extract', uploadCovers, ctrl.extractBookDetailsFromCovers);
 
 // Protected routes
 router.use(protect);

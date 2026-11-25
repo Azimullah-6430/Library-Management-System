@@ -791,6 +791,7 @@ exports.createCopies = async (req, res, next) => {
       success: true,
       message: `Successfully created ${createdCopies.length} physical copies for "${book.title}".`,
       count: createdCopies.length,
+      copy: createdCopies[0],
       copies: createdCopies,
       data: createdCopies,
     });
@@ -1674,7 +1675,7 @@ exports.getGlobalInventoryCounts = async (req, res, next) => {
  */
 exports.resolveScan = async (req, res, next) => {
   try {
-    const qrText = (req.body.qrText || req.body.qrCode || req.body.text || req.body.code || '').trim();
+    const qrText = (req.body.qrText || req.body.qrPayload || req.body.qrCode || req.body.payload || req.body.text || req.body.code || '').trim();
     const currentShelfContextId = req.body.currentShelfContextId || req.body.shelfContextId;
     if (!qrText) {
       return res.status(400).json({ success: false, message: 'QR scan text is required.' });
@@ -1783,11 +1784,13 @@ exports.resolveScan = async (req, res, next) => {
     return res.json({
       success: true,
       entityType: 'COPY',
+      type: 'COPY',
       copy: {
         ...copy,
         isAuditVerified: isVerified,
         locationAuditNotice,
       },
+      book: copy.bookId,
       verification,
       isMatched: verification.isMatched,
       registeredLocation: copy.locationId,
@@ -2030,6 +2033,7 @@ exports.findBooks = async (req, res, next) => {
       pages: Math.ceil(totalBooks / limitNum) || 1,
       isStudentMode,
       books: results,
+      results: results,
       data: results,
     });
   } catch (err) {
@@ -2268,6 +2272,8 @@ exports.recordAuditScan = async (req, res, next) => {
       return res.status(200).json({
         success: true,
         verificationResult: 'DUPLICATE',
+        classification: 'DUPLICATE',
+        scan: { classification: 'DUPLICATE', ...scanEntry },
         message: `ℹ️ Duplicate scan: Copy "${copy.copyId}" has already been recorded in this session.`,
         copy: {
           copyId: copy.copyId,
@@ -2391,6 +2397,8 @@ exports.recordAuditScan = async (req, res, next) => {
     res.status(200).json({
       success: true,
       verificationResult: result,
+      classification: result,
+      scan: { classification: result, ...scanEntry },
       message:
         result === 'VERIFIED'
           ? `✓ Verified: "${copy.copyId}" belongs at this location.`

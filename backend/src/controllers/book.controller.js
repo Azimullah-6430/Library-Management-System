@@ -183,7 +183,7 @@ exports.getBook = async (req, res, next) => {
       isOwner: req.user?._id && book.createdBy?._id ? book.createdBy._id.toString() === req.user._id.toString() : false,
     };
 
-    res.json({ success: true, ...formatted, data: formatted });
+    res.json({ success: true, ...formatted, data: formatted, book: formatted });
   } catch (err) {
     next(err);
   }
