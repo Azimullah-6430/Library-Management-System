@@ -6,6 +6,7 @@ const { protect } = require('../middleware/auth');
 
 router.use(protect);
 
+router.get('/', ctrl.getSummary);
 router.get('/summary', ctrl.getSummary);
 router.get('/full', ctrl.getFullReport);
 

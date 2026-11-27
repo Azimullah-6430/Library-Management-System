@@ -108,10 +108,13 @@ app.use(`${API_PREFIX}/categories`, categoryRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/categories', categoryRoutes);
 
-// Reports routes
+// Reports & Dashboard routes
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/reports', reportRoutes);
+app.use(`${API_PREFIX}/dashboard`, reportRoutes);
+app.use('/api/dashboard', reportRoutes);
+app.use('/dashboard', reportRoutes);
 
 // Import/Export routes
 app.use(`${API_PREFIX}/import-export`, importExportRoutes);
@@ -122,6 +125,27 @@ app.use('/import-export', importExportRoutes);
 app.use(`${API_PREFIX}/smartshelf`, smartshelfRoutes);
 app.use('/api/smartshelf', smartshelfRoutes);
 app.use('/smartshelf', smartshelfRoutes);
+
+// Direct SmartShelf resource aliases (/locations, /copies, /movements, /audits, /scan, /labels, /inventory-counts)
+const directSmartShelfHandler = (req, res, next) => {
+  if (
+    req.path.startsWith('/locations') ||
+    req.path.startsWith('/copies') ||
+    req.path.startsWith('/movements') ||
+    req.path.startsWith('/audits') ||
+    req.path.startsWith('/scan') ||
+    req.path.startsWith('/resolve-scan') ||
+    req.path.startsWith('/labels') ||
+    req.path.startsWith('/inventory-counts')
+  ) {
+    return smartshelfRoutes(req, res, next);
+  }
+  next();
+};
+
+app.use(API_PREFIX, directSmartShelfHandler);
+app.use('/api', directSmartShelfHandler);
+app.use('/', directSmartShelfHandler);
 
 // ── Frontend Static Files & SPA Fallback ────────────────────────────────────
 const frontendCandidates = [
@@ -142,6 +166,13 @@ app.get('*', (req, res, next) => {
     req.path.startsWith('/books') ||
     req.path.startsWith('/categories') ||
     req.path.startsWith('/reports') ||
+    req.path.startsWith('/dashboard') ||
+    req.path.startsWith('/locations') ||
+    req.path.startsWith('/copies') ||
+    req.path.startsWith('/movements') ||
+    req.path.startsWith('/audits') ||
+    req.path.startsWith('/scan') ||
+    req.path.startsWith('/labels') ||
     req.path.startsWith('/smartshelf') ||
     req.path.startsWith('/import-export') ||
     req.path.startsWith('/uploads') ||
